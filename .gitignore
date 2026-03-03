@@ -1,0 +1,32 @@
+# Build artifacts
+build/
+install/
+log/
+devel/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# IDE
+.vscode/
+.idea/
+
+# Docker volumes data
+.docker-volumes/
+
+# ROS logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Map files are okay to commit (they're small)
+# Binaries
+*.tar
+*.tar.gz
+
+# Gemini agent
+.gemini/

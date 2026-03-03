@@ -1,0 +1,39 @@
+services:
+  ros2-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        USERNAME: ros
+        USER_UID: 1000
+    image: ros-humble-sim
+    container_name: ros2-dev
+    network_mode: host
+    ipc: host
+    pid: host
+    privileged: true
+    group_add:
+      - video
+    environment:
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+      - NVIDIA_VISIBLE_DEVICES=all
+      - __NV_PRIME_RENDER_OFFLOAD=1
+      - __GLX_VENDOR_LIBRARY_NAME=nvidia
+      - XDG_RUNTIME_DIR=/tmp/runtime-ros
+      - IGN_PARTITION=ros_humble_sim
+      - IGN_IP=127.0.0.1
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ./src:/home/ros/ws/src:rw
+      - /home/necati/ros2_ws:/home/ros/ros2_ws:rw
+    devices:
+      - /dev/dri:/dev/dri
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [ gpu ]
+    command: sleep infinity
