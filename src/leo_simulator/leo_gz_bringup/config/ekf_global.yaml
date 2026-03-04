@@ -1,0 +1,34 @@
+# EKF Global — Map-level sensor fusion with GPS
+# Publishes: map -> odom TF
+# Output topic: /odometry/global
+
+ekf_global_node:
+  ros__parameters:
+    use_sim_time: true
+    frequency: 10.0
+    two_d_mode: true
+    publish_tf: true          # Sole publisher of map->odom
+    print_diagnostics: true
+
+    # Frames
+    map_frame: map
+    odom_frame: odom
+    base_link_frame: base_footprint
+    world_frame: map          # Global: map-level (GPS anchored)
+
+    # Local EKF output — fused odom+IMU position
+    odom0: /odometry/local
+    odom0_config: [true,  true,  false,   # x, y, z
+                   false, false, true,    # roll, pitch, yaw
+                   false, false, false,   # vx, vy, vz
+                   false, false, false,   # vroll, vpitch, vyaw
+                   false, false, false]   # ax, ay, az
+
+    # GPS odometry from navsat_transform — absolute position
+    odom1: /odometry/gps
+    odom1_config: [true,  true,  false,   # x, y, z (GPS position)
+                   false, false, false,   # roll, pitch, yaw
+                   false, false, false,   # vx, vy, vz
+                   false, false, false,   # vroll, vpitch, vyaw
+                   false, false, false]   # ax, ay, az
+    odom1_differential: false
