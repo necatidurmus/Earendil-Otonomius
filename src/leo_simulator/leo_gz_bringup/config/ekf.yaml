@@ -6,7 +6,7 @@ ekf_filter_node:
     use_sim_time: true
     frequency: 20.0
     two_d_mode: true  # Ground robot, no Z
-    publish_tf: false  # DiffDrive already publishes odom->base_footprint
+    publish_tf: true  # EKF tek kaynak: odom->base_footprint TF
     
     # Frames
     map_frame: map
