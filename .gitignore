@@ -2,7 +2,6 @@
 build/
 install/
 log/
-devel/
 
 # Python
 __pycache__/
@@ -12,21 +11,22 @@ __pycache__/
 # IDE
 .vscode/
 .idea/
+*.code-workspace
 
-# Docker volumes data
-.docker-volumes/
-
-# ROS logs
-*.log
-
-# OS files
+# OS
 .DS_Store
 Thumbs.db
 
-# Map files are okay to commit (they're small)
-# Binaries
-*.tar
-*.tar.gz
+# ROS 2
+*.bag
+*.db3
 
-# Gemini agent
+# Docker
+.docker/
+
+# Gemini
 .gemini/
+
+# Temporary
+*.log
+/tmp/

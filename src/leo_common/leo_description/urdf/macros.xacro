@@ -238,8 +238,8 @@
       <parent link="${link_prefix}rocker_L_link"/>
       <child link="${link_prefix}wheel_FL_link"/>
       <axis xyz="0 -1 0"/>
-      <limit effort="4.0" velocity="6.0"/>
-      <dynamics friction="0.5" damping="0.5"/>
+      <limit effort="200.0" velocity="20.0"/>
+      <dynamics friction="0.3" damping="0.3"/>
     </joint>
 
     <joint name="${joint_prefix}wheel_RL_joint" type="continuous">
@@ -252,8 +252,8 @@
       <parent link="${link_prefix}rocker_L_link"/>
       <child link="${link_prefix}wheel_RL_link"/>
       <axis xyz="0 -1 0"/>
-      <limit effort="4.0" velocity="6.0"/>
-      <dynamics friction="0.5" damping="0.5"/>
+      <limit effort="200.0" velocity="20.0"/>
+      <dynamics friction="0.3" damping="0.3"/>
     </joint>
 
     <joint name="${joint_prefix}wheel_FR_joint" type="continuous">
@@ -266,8 +266,8 @@
       <parent link="${link_prefix}rocker_R_link"/>
       <child link="${link_prefix}wheel_FR_link"/>
       <axis xyz="0 1 0"/>
-      <limit effort="4.0" velocity="6.0"/>
-      <dynamics friction="0.5" damping="0.5"/>
+      <limit effort="200.0" velocity="20.0"/>
+      <dynamics friction="0.3" damping="0.3"/>
     </joint>
 
     <joint name="${joint_prefix}wheel_RR_joint" type="continuous">
@@ -280,8 +280,8 @@
       <parent link="${link_prefix}rocker_R_link"/>
       <child link="${link_prefix}wheel_RR_link"/>
       <axis xyz="0 1 0"/>
-      <limit effort="4.0" velocity="6.0"/>
-      <dynamics friction="0.5" damping="0.5"/> 
+      <limit effort="200.0" velocity="20.0"/>
+      <dynamics friction="0.3" damping="0.3"/> 
     </joint>
 
     <xacro:if value="${default_antenna}">
@@ -633,10 +633,10 @@
         <topic>${link_prefix}cmd_vel</topic>
         <odom_topic>${link_prefix}odom</odom_topic>
         <tf_topic>${link_prefix}tf</tf_topic>
-        <max_linear_acceleration>2.5</max_linear_acceleration>
-        <max_angular_acceleration>3</max_angular_acceleration>
-        <min_linear_acceleration>-2.5</min_linear_acceleration>
-        <min_angular_acceleration>-3</min_angular_acceleration>
+        <max_linear_acceleration>10.0</max_linear_acceleration>
+        <max_angular_acceleration>15.0</max_angular_acceleration>
+        <min_linear_acceleration>-10.0</min_linear_acceleration>
+        <min_angular_acceleration>-15.0</min_angular_acceleration>
       </plugin>
     </gazebo>
   </xacro:macro>
