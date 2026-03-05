@@ -1,0 +1,362 @@
+<?xml version="1.0"?>
+<!--
+  Leo Rover — Obstacle Test World
+  Designed for Dual-UKF navigation testing.
+
+  Layout (50×50m, robot starts at 0,0):
+    • 14 box obstacles  : 2×2×1.0m — impassable, lidar-visible
+    •  2 wall segments  : long barriers creating a narrow-corridor scenario
+    •  6 terrain bumps  : low cylinders (r=1.5m, h=0.15m) — robot rolls over
+                          these; they excite the IMU and test UKF robustness
+
+  GPS datum: Ankara, Turkey (same as leo_empty.sdf)
+-->
+<sdf version="1.8">
+  <world name="leo_obstacles">
+
+    <!-- ── Physics ─────────────────────────────────────────────────── -->
+    <physics name="1ms" type="ignored">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+    </physics>
+
+    <!-- ── Plugins ──────────────────────────────────────────────────── -->
+    <plugin filename="ignition-gazebo-physics-system"
+            name="ignition::gazebo::systems::Physics"/>
+    <plugin filename="ignition-gazebo-sensors-system"
+            name="ignition::gazebo::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+    <plugin filename="ignition-gazebo-scene-broadcaster-system"
+            name="ignition::gazebo::systems::SceneBroadcaster"/>
+    <plugin filename="ignition-gazebo-user-commands-system"
+            name="ignition::gazebo::systems::UserCommands"/>
+    <plugin filename="gz-sim-imu-system"
+            name="gz::sim::systems::Imu"/>
+    <plugin filename="ignition-gazebo-navsat-system"
+            name="ignition::gazebo::systems::NavSat"/>
+
+    <!-- ── GPS datum: Ankara ─────────────────────────────────────────── -->
+    <spherical_coordinates>
+      <surface_model>EARTH_WGS84</surface_model>
+      <world_frame_orientation>ENU</world_frame_orientation>
+      <latitude_deg>39.925018</latitude_deg>
+      <longitude_deg>32.836956</longitude_deg>
+      <elevation>890</elevation>
+      <heading_deg>0</heading_deg>
+    </spherical_coordinates>
+
+    <!-- ── Lighting ─────────────────────────────────────────────────── -->
+    <light name="sun" type="directional">
+      <cast_shadows>true</cast_shadows>
+      <pose>0 0 10 0 0 0</pose>
+      <diffuse>0.8 0.8 0.8 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <attenuation>
+        <range>1000</range>
+        <constant>0.9</constant>
+        <linear>0.01</linear>
+        <quadratic>0.001</quadratic>
+      </attenuation>
+      <direction>-0.5 0.1 -0.9</direction>
+    </light>
+
+    <!-- ── Ground plane ─────────────────────────────────────────────── -->
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>100 100</size>
+            </plane>
+          </geometry>
+          <surface>
+            <friction>
+              <ode><mu>50</mu></ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>100 100</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>0.75 0.70 0.60 1</ambient>
+            <diffuse>0.75 0.70 0.60 1</diffuse>
+            <specular>0.1 0.1 0.1 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         BOX OBSTACLES  (2×2×1.0 m, grey)
+         Each box: base at z=0, top at z=1.0 — fully lidar-visible
+         ════════════════════════════════════════════════════════════════ -->
+
+    <model name="box_01"><static>true</static><pose>5 3 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>2 2 1</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>2 2 1</size></box></geometry>
+          <material><ambient>0.5 0.5 0.5 1</ambient><diffuse>0.5 0.5 0.5 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="box_02"><static>true</static><pose>-7 4 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>2 2 1</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>2 2 1</size></box></geometry>
+          <material><ambient>0.5 0.5 0.5 1</ambient><diffuse>0.5 0.5 0.5 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="box_03"><static>true</static><pose>10 -3 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>2 2 1</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>2 2 1</size></box></geometry>
+          <material><ambient>0.5 0.5 0.5 1</ambient><diffuse>0.5 0.5 0.5 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="box_04"><static>true</static><pose>-10 -5 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>2 2 1</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>2 2 1</size></box></geometry>
+          <material><ambient>0.5 0.5 0.5 1</ambient><diffuse>0.5 0.5 0.5 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="box_05"><static>true</static><pose>3 -8 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>2 2 1</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>2 2 1</size></box></geometry>
+          <material><ambient>0.5 0.5 0.5 1</ambient><diffuse>0.5 0.5 0.5 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="box_06"><static>true</static><pose>8 8 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>2 2 1</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>2 2 1</size></box></geometry>
+          <material><ambient>0.5 0.5 0.5 1</ambient><diffuse>0.5 0.5 0.5 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="box_07"><static>true</static><pose>-5 -12 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>2 2 1</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>2 2 1</size></box></geometry>
+          <material><ambient>0.5 0.5 0.5 1</ambient><diffuse>0.5 0.5 0.5 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="box_08"><static>true</static><pose>12 5 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>2 2 1</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>2 2 1</size></box></geometry>
+          <material><ambient>0.5 0.5 0.5 1</ambient><diffuse>0.5 0.5 0.5 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="box_09"><static>true</static><pose>-12 10 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>2 2 1</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>2 2 1</size></box></geometry>
+          <material><ambient>0.5 0.5 0.5 1</ambient><diffuse>0.5 0.5 0.5 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="box_10"><static>true</static><pose>0 10 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>2 2 1</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>2 2 1</size></box></geometry>
+          <material><ambient>0.5 0.5 0.5 1</ambient><diffuse>0.5 0.5 0.5 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="box_11"><static>true</static><pose>-3 6 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>2 2 1</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>2 2 1</size></box></geometry>
+          <material><ambient>0.5 0.5 0.5 1</ambient><diffuse>0.5 0.5 0.5 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="box_12"><static>true</static><pose>6 -12 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>2 2 1</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>2 2 1</size></box></geometry>
+          <material><ambient>0.5 0.5 0.5 1</ambient><diffuse>0.5 0.5 0.5 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="box_13"><static>true</static><pose>-14 0 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>2 2 1</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>2 2 1</size></box></geometry>
+          <material><ambient>0.5 0.5 0.5 1</ambient><diffuse>0.5 0.5 0.5 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="box_14"><static>true</static><pose>14 -8 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="c"><geometry><box><size>2 2 1</size></box></geometry></collision>
+        <visual name="v"><geometry><box><size>2 2 1</size></box></geometry>
+          <material><ambient>0.5 0.5 0.5 1</ambient><diffuse>0.5 0.5 0.5 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         WALL SEGMENTS  (long barriers, orange)
+         Wall-N: runs E-W at y=+17, 20m long — north boundary corridor
+         Wall-E: runs N-S at x=+17, 20m long — east boundary corridor
+         Both create a narrow funnel the planner must navigate around.
+         ════════════════════════════════════════════════════════════════ -->
+
+    <!-- North wall: x-axis aligned, y=17, 20m long × 0.4m wide × 1.5m tall -->
+    <model name="wall_north">
+      <static>true</static>
+      <pose>0 17 0.75 0 0 0</pose>
+      <link name="link">
+        <collision name="c">
+          <geometry><box><size>20 0.4 1.5</size></box></geometry>
+        </collision>
+        <visual name="v">
+          <geometry><box><size>20 0.4 1.5</size></box></geometry>
+          <material><ambient>0.85 0.45 0.1 1</ambient><diffuse>0.85 0.45 0.1 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- East wall: y-axis aligned, x=17, 16m long × 0.4m wide × 1.5m tall -->
+    <model name="wall_east">
+      <static>true</static>
+      <pose>17 0 0.75 0 0 1.5708</pose>
+      <link name="link">
+        <collision name="c">
+          <geometry><box><size>16 0.4 1.5</size></box></geometry>
+        </collision>
+        <visual name="v">
+          <geometry><box><size>16 0.4 1.5</size></box></geometry>
+          <material><ambient>0.85 0.45 0.1 1</ambient><diffuse>0.85 0.45 0.1 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         TERRAIN BUMPS  (low cylinders, r=1.5m h=0.15m, tan/brown)
+         Robot can drive over these; they excite IMU → stress-tests UKF.
+         Positions chosen away from box obstacles (>=3m clearance).
+         ════════════════════════════════════════════════════════════════ -->
+
+    <model name="bump_01">
+      <static>true</static>
+      <pose>2 5 0.075 0 0 0</pose>
+      <link name="link">
+        <collision name="c">
+          <geometry><cylinder><radius>1.5</radius><length>0.15</length></cylinder></geometry>
+          <surface><friction><ode><mu>0.8</mu></ode></friction></surface>
+        </collision>
+        <visual name="v">
+          <geometry><cylinder><radius>1.5</radius><length>0.15</length></cylinder></geometry>
+          <material><ambient>0.6 0.45 0.25 1</ambient><diffuse>0.6 0.45 0.25 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="bump_02">
+      <static>true</static>
+      <pose>-4 -3 0.075 0 0 0</pose>
+      <link name="link">
+        <collision name="c">
+          <geometry><cylinder><radius>1.5</radius><length>0.15</length></cylinder></geometry>
+          <surface><friction><ode><mu>0.8</mu></ode></friction></surface>
+        </collision>
+        <visual name="v">
+          <geometry><cylinder><radius>1.5</radius><length>0.15</length></cylinder></geometry>
+          <material><ambient>0.6 0.45 0.25 1</ambient><diffuse>0.6 0.45 0.25 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="bump_03">
+      <static>true</static>
+      <pose>7 -6 0.075 0 0 0</pose>
+      <link name="link">
+        <collision name="c">
+          <geometry><cylinder><radius>1.5</radius><length>0.15</length></cylinder></geometry>
+          <surface><friction><ode><mu>0.8</mu></ode></friction></surface>
+        </collision>
+        <visual name="v">
+          <geometry><cylinder><radius>1.5</radius><length>0.15</length></cylinder></geometry>
+          <material><ambient>0.6 0.45 0.25 1</ambient><diffuse>0.6 0.45 0.25 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="bump_04">
+      <static>true</static>
+      <pose>-8 12 0.075 0 0 0</pose>
+      <link name="link">
+        <collision name="c">
+          <geometry><cylinder><radius>1.5</radius><length>0.15</length></cylinder></geometry>
+          <surface><friction><ode><mu>0.8</mu></ode></friction></surface>
+        </collision>
+        <visual name="v">
+          <geometry><cylinder><radius>1.5</radius><length>0.15</length></cylinder></geometry>
+          <material><ambient>0.6 0.45 0.25 1</ambient><diffuse>0.6 0.45 0.25 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="bump_05">
+      <static>true</static>
+      <pose>11 10 0.075 0 0 0</pose>
+      <link name="link">
+        <collision name="c">
+          <geometry><cylinder><radius>1.5</radius><length>0.15</length></cylinder></geometry>
+          <surface><friction><ode><mu>0.8</mu></ode></friction></surface>
+        </collision>
+        <visual name="v">
+          <geometry><cylinder><radius>1.5</radius><length>0.15</length></cylinder></geometry>
+          <material><ambient>0.6 0.45 0.25 1</ambient><diffuse>0.6 0.45 0.25 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="bump_06">
+      <static>true</static>
+      <pose>-6 -8 0.075 0 0 0</pose>
+      <link name="link">
+        <collision name="c">
+          <geometry><cylinder><radius>1.5</radius><length>0.15</length></cylinder></geometry>
+          <surface><friction><ode><mu>0.8</mu></ode></friction></surface>
+        </collision>
+        <visual name="v">
+          <geometry><cylinder><radius>1.5</radius><length>0.15</length></cylinder></geometry>
+          <material><ambient>0.6 0.45 0.25 1</ambient><diffuse>0.6 0.45 0.25 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+  </world>
+</sdf>
