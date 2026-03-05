@@ -10,7 +10,8 @@ navsat_transform_node:
     magnetic_declination_radians: 0.0698  # ~4 deg for Ankara
     yaw_offset: 0.0
     zero_altitude: true
-    broadcast_utm_transform: true
+    broadcast_utm_transform: false   # false → map origin = GPS datum, not UTM grid
     publish_filtered_gps: true
-    wait_for_datum: false
+    wait_for_datum: true             # Use explicit datum below (Gazebo world origin)
+    datum: [39.925018, 32.836956, 890.0]   # Matches leo_obstacles.sdf spherical_coordinates
     use_odometry_yaw: true

@@ -2,12 +2,19 @@
 # NO AMCL, NO map_server — localization provided by dual-EKF + GPS
 # Global costmap: rolling 40x40m with obstacle detection only
 
+lifecycle_manager_navigation:
+  ros__parameters:
+    use_sim_time: True
+    autostart: True
+    bond_timeout: 30.0          # Increased — avoids timeout during costmap init
+    attempt_respawn_reconnection: true
+
 bt_navigator:
   ros__parameters:
     use_sim_time: True
     global_frame: map
     robot_base_frame: base_footprint
-    odom_topic: /odometry/filtered   # Use smooth local EKF (no GPS jumps)
+    odom_topic: /odometry/filtered
     bt_loop_duration: 10
     default_server_timeout: 20
 

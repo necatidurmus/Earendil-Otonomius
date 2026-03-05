@@ -116,5 +116,5 @@ def generate_launch_description():
         TimerAction(period=6.0, actions=[ukf_global_node]),
 
         # t=10s — Nav2 (needs map→odom→base_footprint TF chain)
-        TimerAction(period=10.0, actions=[nav2]),
+        TimerAction(period=20.0, actions=[nav2]),
     ])
