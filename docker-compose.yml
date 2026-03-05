@@ -14,6 +14,7 @@ services:
     privileged: true
     group_add:
       - video
+      - "983" # /dev/dri/card2 NVIDIA render grubu
     environment:
       - DISPLAY=${DISPLAY}
       - QT_X11_NO_MITSHM=1

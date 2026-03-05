@@ -12,7 +12,7 @@ import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionClient
 from nav2_msgs.action import NavigateToPose
-from geometry_msgs.msg import PoseStamped, Point
+from geometry_msgs.msg import PoseStamped
 from sensor_msgs.msg import NavSatFix
 from robot_localization.srv import FromLL
 import math
@@ -46,6 +46,7 @@ class GPSWaypointNav(Node):
         # State
         self.wp_index = 0
         self.wp_results = []
+        self._map_cache = {}  # pre-computed map XY per wp index
         self.start_time = time.time()
 
         self.get_logger().info('=' * 60)
@@ -77,10 +78,9 @@ class GPSWaypointNav(Node):
             return None, None
 
         req = FromLL.Request()
-        req.ll_point = Point()
-        req.ll_point.x = lat   # latitude
-        req.ll_point.y = lon   # longitude
-        req.ll_point.z = 0.0
+        req.ll_point.latitude = lat
+        req.ll_point.longitude = lon
+        req.ll_point.altitude = 0.0
 
         future = self.fromll_client.call_async(req)
         rclpy.spin_until_future_complete(self, future, timeout_sec=5.0)
@@ -92,22 +92,34 @@ class GPSWaypointNav(Node):
             self.get_logger().error('/fromLL call failed!')
             return None, None
 
-    def _compute_yaw(self, current_wp_idx):
-        """Compute heading (yaw) toward the next waypoint."""
+    def _precompute_waypoints(self):
+        """Convert ALL GPS waypoints to map XY before spin starts.
+
+        Must be called before rclpy.spin() is active — calling
+        spin_until_future_complete from inside a callback (e.g. _result_cb)
+        while spin() is already running causes a deadlock / executor error.
+        """
+        self.get_logger().info('Pre-converting all GPS waypoints to map XY...')
+        for i, wp in enumerate(self.waypoints):
+            x, y = self._gps_to_map(wp['lat'], wp['lon'])
+            if x is None:
+                self.get_logger().error(
+                    f'  WP{i+1} ({wp.get("name","")}) GPS dönüşümü başarısız!')
+                self._map_cache[i] = None
+            else:
+                self._map_cache[i] = (x, y)
+                self.get_logger().info(
+                    f'  WP{i+1}: ({wp["lat"]:.6f}, {wp["lon"]:.6f}) -> ({x:.2f}, {y:.2f})')
+
+    def _compute_yaw_from_cache(self, current_wp_idx):
+        """Compute heading toward the next waypoint using pre-cached map XY."""
         if current_wp_idx + 1 >= len(self.waypoints):
             return 0.0  # Last waypoint: no heading preference
-
-        # Convert both current and next WP to map XY
-        curr = self.waypoints[current_wp_idx]
-        nxt = self.waypoints[current_wp_idx + 1]
-
-        cx, cy = self._gps_to_map(curr['lat'], curr['lon'])
-        nx, ny = self._gps_to_map(nxt['lat'], nxt['lon'])
-
-        if cx is None or nx is None:
+        curr = self._map_cache.get(current_wp_idx)
+        nxt = self._map_cache.get(current_wp_idx + 1)
+        if curr is None or nxt is None:
             return 0.0
-
-        return math.atan2(ny - cy, nx - cx)
+        return math.atan2(nxt[1] - curr[1], nxt[0] - curr[0])
 
     def start_navigation(self):
         """Wait for GPS fix and /fromLL service, then start sending goals."""
@@ -128,6 +140,9 @@ class GPSWaypointNav(Node):
             self.get_logger().error('Nav2 action server not available!')
             return
 
+        # Pre-compute all waypoints BEFORE spin() starts (avoids deadlock in callbacks)
+        self._precompute_waypoints()
+
         self.send_next_waypoint()
 
     def send_next_waypoint(self):
@@ -137,23 +152,23 @@ class GPSWaypointNav(Node):
             return
 
         wp = self.waypoints[self.wp_index]
-        lat, lon, name = wp['lat'], wp['lon'], wp.get('name', f'WP{self.wp_index+1}')
+        name = wp.get('name', f'WP{self.wp_index+1}')
 
-        # Convert GPS to map XY via /fromLL
-        x, y = self._gps_to_map(lat, lon)
-        if x is None:
-            self.get_logger().error(f'  Failed to convert {name} to map XY, skipping')
+        # Use pre-computed map coordinates — safe to call from callbacks
+        cached = self._map_cache.get(self.wp_index)
+        if cached is None:
+            self.get_logger().error(f'  {name} için harita koordinatı yok, atlanıyor')
             self.wp_results.append({'wp': self.wp_index+1, 'name': name, 'status': 'SKIP'})
             self.wp_index += 1
             self.send_next_waypoint()
             return
 
-        # Compute yaw toward next waypoint
-        yaw = self._compute_yaw(self.wp_index)
+        x, y = cached
+        yaw = self._compute_yaw_from_cache(self.wp_index)
 
         self.get_logger().info('')
         self.get_logger().info(f'[{self.wp_index+1}/{len(self.waypoints)}] {name}')
-        self.get_logger().info(f'  GPS: ({lat:.6f}, {lon:.6f}) -> Map: ({x:.2f}, {y:.2f})')
+        self.get_logger().info(f'  GPS: ({wp["lat"]:.6f}, {wp["lon"]:.6f}) -> Map: ({x:.2f}, {y:.2f})')
         self.get_logger().info(f'  Yaw: {math.degrees(yaw):.1f} deg')
 
         # Build goal

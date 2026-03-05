@@ -1,16 +1,19 @@
-# GPS Mapless Navigation with Dual-EKF Sensor Fusion
+# GPS Mapless Navigation with EKF + NavSat Sensor Fusion
 # Architecture:
-#   ekf_local  → odom->base_footprint (wheel + IMU)
-#   ekf_global → map->odom (local EKF + GPS)
-#   navsat     → GPS->odom conversion, /fromLL service
-#   Nav2       → navigation_launch (no AMCL, no map_server)
+#   DiffDrive   → odom->base_footprint (Gazebo)
+#   EKF         → map->odom (wheel+IMU+GPS fused, world_frame: map)
+#   navsat      → GPS->odom conversion, /fromLL service
+#   Nav2        → navigation_launch (no AMCL, no map_server)
+#
+# Bootstrap: static map->odom identity TF ensures EKF can start,
+#            then EKF overrides it with GPS-corrected transform.
 #
 # Usage: ros2 launch leo_gz_bringup navigation_ekf.launch.py
 
 import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, TimerAction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
@@ -22,32 +25,28 @@ def generate_launch_description():
 
     use_sim_time = LaunchConfiguration("use_sim_time")
 
-    ekf_local_config = os.path.join(pkg_project, "config", "ekf_local.yaml")
-    ekf_global_config = os.path.join(pkg_project, "config", "ekf_global.yaml")
+    ekf_config = os.path.join(pkg_project, "config", "ekf_global.yaml")
     navsat_config = os.path.join(pkg_project, "config", "navsat.yaml")
     nav2_params = os.path.join(pkg_project, "config", "nav2_params_gps.yaml")
 
-    # ── EKF Local: odom -> base_footprint (smooth, high-freq) ──
-    ekf_local = Node(
-        package="robot_localization",
-        executable="ekf_node",
-        name="ekf_local_node",
-        output="screen",
-        parameters=[ekf_local_config, {"use_sim_time": use_sim_time}],
-        remappings=[("odometry/filtered", "/odometry/local")],
+    # ── Bootstrap: static map -> odom (identity, EKF overrides later) ──
+    static_tf = Node(
+        package="tf2_ros",
+        executable="static_transform_publisher",
+        arguments=["0", "0", "0", "0", "0", "0", "map", "odom"],
+        parameters=[{"use_sim_time": use_sim_time}],
     )
 
-    # ── EKF Global: map -> odom (GPS-anchored) ──
-    ekf_global = Node(
+    # ── EKF: map -> odom (GPS-corrected, overrides static TF) ──
+    ekf_node = Node(
         package="robot_localization",
         executable="ekf_node",
-        name="ekf_global_node",
+        name="ekf_filter_node",
         output="screen",
-        parameters=[ekf_global_config, {"use_sim_time": use_sim_time}],
-        remappings=[("odometry/filtered", "/odometry/global")],
+        parameters=[ekf_config, {"use_sim_time": use_sim_time}],
     )
 
-    # ── NavSat Transform: GPS -> local odom + /fromLL service ──
+    # ── NavSat Transform: GPS -> odometry/gps + /fromLL service ──
     navsat = Node(
         package="robot_localization",
         executable="navsat_transform_node",
@@ -57,7 +56,7 @@ def generate_launch_description():
         remappings=[
             ("imu",               "/imu/data_raw"),
             ("gps/fix",           "/navsat"),
-            ("odometry/filtered", "/odometry/local"),
+            ("odometry/filtered", "/odometry/filtered"),
         ],
     )
 
@@ -75,8 +74,12 @@ def generate_launch_description():
 
     return LaunchDescription([
         DeclareLaunchArgument("use_sim_time", default_value="true"),
-        ekf_local,
-        ekf_global,
-        navsat,
-        nav2,
+        # Static TF bootstrap (EKF overrides once data flows)
+        static_tf,
+        # EKF starts immediately
+        ekf_node,
+        # NavSat needs EKF filtered output
+        TimerAction(period=3.0, actions=[navsat]),
+        # Nav2 needs map->odom->base_footprint TF chain
+        TimerAction(period=8.0, actions=[nav2]),
     ])

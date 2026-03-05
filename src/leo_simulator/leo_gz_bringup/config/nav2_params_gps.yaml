@@ -7,7 +7,7 @@ bt_navigator:
     use_sim_time: True
     global_frame: map
     robot_base_frame: base_footprint
-    odom_topic: /odometry/local   # Use smooth local EKF (no GPS jumps)
+    odom_topic: /odometry/filtered   # Use smooth local EKF (no GPS jumps)
     bt_loop_duration: 10
     default_server_timeout: 20
 
@@ -31,7 +31,7 @@ controller_server:
     general_goal_checker:
       stateful: True
       plugin: "nav2_controller::SimpleGoalChecker"
-      xy_goal_tolerance: 0.5         # Larger for GPS outdoor
+      xy_goal_tolerance: 0.6         # Larger for GPS outdoor
       yaw_goal_tolerance: 0.4
 
     FollowPath:
@@ -39,16 +39,16 @@ controller_server:
       debug_trajectory_details: True
       min_vel_x: 0.0
       min_vel_y: 0.0
-      max_vel_x: 0.3
+      max_vel_x: 0.6
       max_vel_y: 0.0
-      max_vel_theta: 1.0
+      max_vel_theta: 1.2
       min_speed_xy: 0.0
-      max_speed_xy: 0.3
+      max_speed_xy: 0.6
       min_speed_theta: 0.0
-      acc_lim_x: 2.5
+      acc_lim_x: 3.0
       acc_lim_y: 0.0
-      acc_lim_theta: 3.0
-      decel_lim_x: -2.5
+      acc_lim_theta: 3.5
+      decel_lim_x: -3.0
       decel_lim_y: 0.0
       decel_lim_theta: -3.0
       vx_samples: 20
@@ -58,8 +58,8 @@ controller_server:
       linear_granularity: 0.05
       angular_granularity: 0.025
       transform_tolerance: 0.2
-      xy_goal_tolerance: 0.5
-      trans_stopped_velocity: 0.05  # Fixed: was 0.25 (too close to max 0.3)
+      xy_goal_tolerance: 0.6
+      trans_stopped_velocity: 0.07  # Slightly higher with new max 0.6
       short_circuit_trajectory_evaluation: True
       stateful: True
       critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]
@@ -210,11 +210,11 @@ velocity_smoother:
     smoothing_frequency: 20.0
     scale_velocities: False
     feedback: "OPEN_LOOP"
-    max_velocity: [0.3, 0.0, 1.0]
-    min_velocity: [-0.3, 0.0, -1.0]
-    max_accel: [2.5, 0.0, 3.0]
-    max_decel: [-2.5, 0.0, -3.0]
-    odom_topic: "/odometry/local"
+    max_velocity: [0.6, 0.0, 1.2]
+    min_velocity: [-0.6, 0.0, -1.2]
+    max_accel: [3.0, 0.0, 3.5]
+    max_decel: [-3.0, 0.0, -3.5]
+    odom_topic: "/odometry/filtered"  # ekf_local_node launch edilmiyor; /odometry/local hiç yok
     odom_duration: 0.1
     deadband_velocity: [0.0, 0.0, 0.0]
     velocity_timeout: 1.0

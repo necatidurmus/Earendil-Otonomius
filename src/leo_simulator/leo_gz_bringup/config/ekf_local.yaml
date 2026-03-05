@@ -7,7 +7,7 @@ ekf_local_node:
     use_sim_time: true
     frequency: 30.0
     two_d_mode: true
-    publish_tf: true          # Sole publisher of odom->base_footprint
+    publish_tf: false         # DiffDrive provides odom->base_footprint
     print_diagnostics: true
 
     # Frames

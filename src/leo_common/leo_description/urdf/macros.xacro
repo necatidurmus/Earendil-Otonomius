@@ -632,7 +632,7 @@
         <odom_publish_frequency>20</odom_publish_frequency>
         <topic>${link_prefix}cmd_vel</topic>
         <odom_topic>${link_prefix}odom</odom_topic>
-        <tf_topic>${link_prefix}tf_gazebo_unused</tf_topic>
+        <tf_topic>${link_prefix}tf</tf_topic>
         <max_linear_acceleration>10.0</max_linear_acceleration>
         <max_angular_acceleration>15.0</max_angular_acceleration>
         <min_linear_acceleration>-10.0</min_linear_acceleration>
