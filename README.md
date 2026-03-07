@@ -1,16 +1,16 @@
 # Leo Rover ROS 2 Humble Simulation
 
 Leo Rover'ın ROS 2 Humble + Gazebo Ignition (Fortress) simülasyon ortamı.  
-GPS destekli **Dual-UKF** sensör füzyonu ve Nav2 ile 5 waypoint otonom navigasyon içerir.
+GPS destekli **Dual-UKF** sensör füzyonu ve Nav2 ile **4 waypoint** otonom navigasyon içerir.
 
 ## Özellikler
 
-- 🌍 Gazebo simülasyonu (boş dünya + engelli/engebeli arazi)
+- 🌍 Gazebo simülasyonu (boş dünya + 14 engelli arazi)
 - 🧭 Nav2 navigasyon (GPS waypoint, engel kaçınma, haritasız)
 - 🔧 **Dual-UKF** sensör füzyonu (UKF Local + UKF Global + NavSat)
 - 📡 LiDAR + GPS + IMU sensörleri
 - 🕹️ Web tabanlı teleoperasyon
-- 🧪 5 GPS waypoint otonom test scripti
+- 🧪 4 GPS waypoint otonom test scripti (4/4 başarılı ✅)
 
 ## Gereksinimler
 
@@ -20,17 +20,14 @@ GPS destekli **Dual-UKF** sensör füzyonu ve Nav2 ile 5 waypoint otonom navigas
 ## Hızlı Başlangıç
 
 ```bash
-# 1. Tam test (Gazebo GUI + Dual-UKF + Nav2 + 5 waypoint)
+# 1. Tam test (Gazebo GUI + Dual-UKF + Nav2 + 4 waypoint)
 ./run_dual_ukf_test.sh
 
 # 2. Engelsiz dünyada test
 ./run_dual_ukf_test.sh --world empty
 
 # 3. Özel timeout ile test
-./run_dual_ukf_test.sh --world obstacles --timeout 200
-
-# 4. Sadece simülasyon (Nav2 olmadan)
-python3 start_simulation.py --no-nav
+./run_dual_ukf_test.sh --timeout 300
 ```
 
 ## Proje Yapısı
@@ -39,8 +36,7 @@ python3 start_simulation.py --no-nav
 ├── Dockerfile                    # ROS 2 Humble Docker image
 ├── docker-compose.yml            # Container yapılandırması
 ├── run_dual_ukf_test.sh          # Tek komutla tam test başlatıcı
-├── test_dual_ukf.py              # Dual-UKF doğrulama + 5 waypoint test
-├── start_simulation.py           # Simülasyon başlatıcı
+├── test_dual_ukf.py              # Dual-UKF doğrulama + 4 waypoint test
 ├── src/
 │   ├── teleop_web/               # Web teleoperasyon arayüzü
 │   ├── leo_common/               # Leo Rover URDF & açıklama
@@ -99,15 +95,17 @@ Gazebo IMU        →  /imu/data_raw  ──────────────
 
 ## Test Waypoint'leri
 
-Ankara Keçiören koordinatlarına göre 5 hedef (datum: `39.93°N, 32.84°E`):
+Ankara koordinatlarına göre 4 güvenli hedef (datum: `39.925018°N, 32.836956°E`):  
+Tüm waypoint'ler engellerden en az **2.9m** uzaklıkta.
 
-| # | Kuzey (m) | Doğu (m) | Açıklama |
-|---|-----------|----------|----------|
-| 1 | +10 | +10 | Kuzeydoğu |
-| 2 | +20 | -5 | Kuzey |
-| 3 | +5 | -15 | Kuzeybatı |
-| 4 | -10 | +5 | Güney |
-| 5 | 0 | 0 | Başlangıç |
+| # | Ofset (m) | Yön | Engel Uzk. | Süre | Sonuç |
+|---|-----------|-----|-----------|------|-------|
+| 1 | (+3, +5) | Kuzeydoğu | 3.0m | 36.7s | ✅ |
+| 2 | (-6, +11) | Kuzeybatı | 3.0m | 82.3s | ✅ |
+| 3 | (+14, +1) | Doğu | 2.9m | 43.2s | ✅ |
+| 4 | (-3, -5) | Güneybatı | 3.9m | 120.8s | ✅ |
+
+**Toplam: 4/4 başarılı | 284.9s**
 
 ## Lisans
 
