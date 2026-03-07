@@ -8,10 +8,10 @@ navsat_transform_node:
     frequency: 10.0
     delay: 0.0
     magnetic_declination_radians: 0.0   # Simulation: no magnetic declination
-    yaw_offset: 0.0                     # Gazebo ENU, heading_deg=0 → yaw=0 is East
+    yaw_offset: 1.5708                  # π/2: Gazebo ENU X=East → ROS yaw=0 North dönüşümü
     zero_altitude: true
     broadcast_utm_transform: false
     publish_filtered_gps: true
     wait_for_datum: true
     datum: [39.925018, 32.836956, 890.0]   # Exact match with leo_obstacles.sdf spherical_coordinates
-    use_odometry_yaw: true
+    use_odometry_yaw: false                 # false: IMU yaw kullan (robot hareket etmeden doğru yaw)

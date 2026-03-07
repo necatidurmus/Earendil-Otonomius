@@ -1,6 +1,6 @@
 # Nav2 parameters for GPS mapless navigation
-# NO AMCL, NO map_server — localization provided by dual-EKF + GPS
-# Global costmap: rolling 40x40m with obstacle detection only
+# NO AMCL, NO map_server — localization provided by dual-UKF + GPS
+# Global costmap: rolling 80x80m with obstacle detection only
 
 lifecycle_manager_navigation:
   ros__parameters:
@@ -133,8 +133,8 @@ global_costmap:
       robot_radius: 0.49
       resolution: 0.1              # Coarser for large area
       rolling_window: true          # ROLLING: no static map needed
-      width: 40                     # 40x40m
-      height: 40
+      width: 80                     # 80x80m — waypoint'ler ±20m+ uzakta
+      height: 80
       track_unknown_space: false    # Mapless: unknown = free
       plugins: ["obstacle_layer", "inflation_layer"]   # NO static_layer
       obstacle_layer:
@@ -222,7 +222,7 @@ velocity_smoother:
     min_velocity: [-0.6, 0.0, -1.2]
     max_accel: [3.0, 0.0, 3.5]
     max_decel: [-3.0, 0.0, -3.5]
-    odom_topic: "/odometry/filtered"  # ekf_local_node launch edilmiyor; /odometry/local hiç yok
+    odom_topic: "/odometry/filtered"  # UKF Global çıktısı
     odom_duration: 0.1
     deadband_velocity: [0.0, 0.0, 0.0]
     velocity_timeout: 1.0

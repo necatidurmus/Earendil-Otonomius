@@ -70,13 +70,27 @@ echo ""
 # ── 1. Temizlik ───────────────────────────────────────────────────────
 echo "[1/5] Eski süreçler temizleniyor..."
 docker exec $CONTAINER bash -c "
+    # UKF / NavSat
     pkill -9 -x ukf_node 2>/dev/null || true
     pkill -9 -x navsat_transform_node 2>/dev/null || true
+    pkill -9 -x static_transform_publisher 2>/dev/null || true
+    # Nav2 standalone node adları
     pkill -9 -x bt_navigator 2>/dev/null || true
-    pkill -9 -x controller_server 2>/dev/null || true
-    pkill -9 -x planner_server 2>/dev/null || true
     pkill -9 -x lifecycle_manager 2>/dev/null || true
+    pkill -9 -x velocity_smoother 2>/dev/null || true
+    pkill -9 -x waypoint_follower 2>/dev/null || true
+    # Nav2 composition container (Nav2 varsayılan olarak component container kullanır)
     pkill -9 -x component_container_isolated 2>/dev/null || true
+    # Nav2 package binary yollarına göre (component olarak çalışanlar)
+    pkill -9 -f nav2_controller/controller_server 2>/dev/null || true
+    pkill -9 -f nav2_planner/planner_server 2>/dev/null || true
+    pkill -9 -f nav2_behaviors/behavior_server 2>/dev/null || true
+    pkill -9 -f nav2_smoother/smoother_server 2>/dev/null || true
+    pkill -9 -f nav2_bt_navigator/bt_navigator 2>/dev/null || true
+    pkill -9 -f nav2_lifecycle_manager/lifecycle_manager 2>/dev/null || true
+    pkill -9 -f nav2_velocity_smoother/velocity_smoother 2>/dev/null || true
+    pkill -9 -f nav2_waypoint_follower/waypoint_follower 2>/dev/null || true
+    # Gazebo + köprüler
     pkill -9 -x gz 2>/dev/null || true
     pkill -9 -x ign 2>/dev/null || true
     pkill -9 -x robot_state_publisher 2>/dev/null || true
@@ -100,8 +114,8 @@ echo "[3/5] Gazebo başlatılıyor ($WORLD_NAME)..."
 docker exec $CONTAINER bash -c "$SETUP && ros2 launch leo_gz_bringup leo_gz.launch.py sim_world:='-r $WORLD'" &
 GZ_PID=$!
 
-echo "  Gazebo yükleniyor (25s)..."
-sleep 25
+echo "  Gazebo yükleniyor (30s)..."
+sleep 30
 
 # TF kontrol
 echo "  TF kontrol ediliyor (odom→base_footprint)..."
@@ -121,22 +135,27 @@ echo "  Başlatma sırası:"
 echo "    t=0s   UKF Local  (odom + IMU → /odometry/local)"
 echo "    t=4s   UKF Global (/odometry/local + /odometry/gps → /odometry/filtered)"
 echo "    t=8s   NavSat     (GPS → /odometry/gps + /fromLL)"
-echo "    t=25s  Nav2       (navigate_to_pose action)"
+echo "    t=40s  Nav2       (navigate_to_pose action)"
 echo ""
-echo "  Nav2'nin tam hazır olması için 55s bekleniyor..."
-sleep 55
+echo "  Nav2'nin tam hazır olması için 70s bekleniyor..."
+sleep 70
 
-# Nav2 lifecycle bringup race durumunda startup'ı tekrar tetikle
+# Nav2 lifecycle bringup race durumunda: önce RESET, sonra STARTUP
 echo "  Nav2 lifecycle startup kontrolü..."
 for i in $(seq 1 3); do
-    docker exec $CONTAINER bash -c "$SETUP && timeout 6 ros2 service call /lifecycle_manager_navigation/manage_nodes nav2_msgs/srv/ManageLifecycleNodes \"{command: 0}\"" >/dev/null 2>&1 || true
-    ACTIVES=$(docker exec $CONTAINER bash -c "$SETUP && timeout 3 ros2 lifecycle nodes 2>/dev/null | grep -c 'active\|configured'" || true)
-    if [ "${ACTIVES:-0}" -gt 0 ]; then
-        echo "  Nav2 lifecycle tetikleme denemesi: $i/3"
+    # Önce mevcut düğümlerin durumunu gör
+    ACTIVE_COUNT=$(docker exec $CONTAINER bash -c "$SETUP && timeout 3 ros2 action list 2>/dev/null | grep -c navigate_to_pose" 2>/dev/null || echo 0)
+    if [ "${ACTIVE_COUNT:-0}" -gt 0 ]; then
+        echo "  Nav2 action server aktif! ($i/3)"
         break
     fi
-    echo "  Nav2 lifecycle henüz hazır değil... ($i/3)"
+    echo "  Nav2 lifecycle tetikleniyor... ($i/3)"
+    # Adım 1: RESET — bütün düğümleri unconfigured'a al
+    docker exec $CONTAINER bash -c "$SETUP && timeout 8 ros2 service call /lifecycle_manager_navigation/manage_nodes nav2_msgs/srv/ManageLifecycleNodes \"{command: 3}\"" >/dev/null 2>&1 || true
     sleep 3
+    # Adım 2: STARTUP — configure + activate
+    docker exec $CONTAINER bash -c "$SETUP && timeout 30 ros2 service call /lifecycle_manager_navigation/manage_nodes nav2_msgs/srv/ManageLifecycleNodes \"{command: 0}\"" >/dev/null 2>&1 || true
+    sleep 5
 done
 
 # ── 4a. Durum Raporu ─────────────────────────────────────────────────

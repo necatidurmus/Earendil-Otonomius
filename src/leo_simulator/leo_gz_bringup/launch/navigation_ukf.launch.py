@@ -13,7 +13,7 @@
 #   t=4s  :  UKF Global (needs /odometry/local; starts before NavSat so it can
 #             publish /odometry/filtered which NavSat needs for yaw)
 #   t=8s  :  NavSat (needs /odometry/filtered for yaw; outputs /odometry/gps in map frame)
-#   t=25s :  Nav2 (needs complete TF chain: map→odom→base_footprint)
+#   t=40s :  Nav2 (needs complete TF chain: map→odom→base_footprint)
 #
 # Usage:
 #   ros2 launch leo_gz_bringup navigation_ukf.launch.py
@@ -118,6 +118,6 @@ def generate_launch_description():
         # t=8s — NavSat (needs /odometry/filtered from UKF Global for yaw; outputs /odometry/gps in map frame)
         TimerAction(period=8.0, actions=[navsat]),
 
-        # t=25s — Nav2 (needs map→odom→base_footprint TF chain; extra margin for node services)
-        TimerAction(period=25.0, actions=[nav2]),
+        # t=40s — Nav2 (needs map→odom→base_footprint TF chain; extra margin for UKF convergence)
+        TimerAction(period=40.0, actions=[nav2]),
     ])

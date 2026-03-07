@@ -405,7 +405,7 @@ class DualUKFTest(Node):
         result = future.result()
         elapsed = round(time.time() - self.wp_start, 1)
         name = self.waypoints[self.wp_index].get('name', '')
-        status_map = {4: 'BAŞARILI ✅', 6: 'İPTAL ⚠️', 5: 'DURDURULDU'}
+        status_map = {4: 'BAŞARILI ✅', 5: 'CANCELED ⚠️', 6: 'İPTAL (ABORTED)'}
         status = status_map.get(result.status, f'DURUM={result.status}')
 
         self.wp_results.append({
