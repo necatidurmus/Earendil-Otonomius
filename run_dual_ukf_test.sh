@@ -7,12 +7,12 @@
 #   2. Build
 #   3. Gazebo + Robot spawn (engelli dünya)
 #   4. Dual-UKF + NavSat + Nav2 başlat
-#   5. UKF doğrulama + 5 GPS waypoint navigasyonu
+#   5. UKF doğrulama + 4 GPS waypoint navigasyonu
 #
 # Kullanım:
-#   ./run_dual_ukf_test.sh
-#   ./run_dual_ukf_test.sh --world empty    # engelsiz dünya
-#   ./run_dual_ukf_test.sh --timeout 300    # 300s zaman aşımı
+#   ./run_dual_ukf_test.sh                         # GUI + obstacles
+#   ./run_dual_ukf_test.sh --world empty           # engelsiz dünya
+#   ./run_dual_ukf_test.sh --timeout 300           # 300s zaman aşımı
 #
 # Durdurmak: Ctrl+C
 # ═══════════════════════════════════════════════════════════════════════
@@ -24,7 +24,7 @@ SETUP="source /home/ros/ws/install/setup.bash"
 WORLD_TYPE="obstacles"  # obstacles veya empty
 TIMEOUT="200"
 
-# Basit arguman parse: --world <empty|obstacles> --timeout <sn>
+# Arguman parse: --world <empty|obstacles> --timeout <sn>
 while [ $# -gt 0 ]; do
     case "$1" in
         --world)
@@ -51,9 +51,11 @@ done
 if [ "$WORLD_TYPE" = "empty" ]; then
     WORLD="/home/ros/ws/install/leo_gz_worlds/share/leo_gz_worlds/worlds/leo_empty.sdf"
     WORLD_NAME="Boş Dünya"
+    GZ_WORLD_NAME="leo_empty"
 else
     WORLD="/home/ros/ws/install/leo_gz_worlds/share/leo_gz_worlds/worlds/leo_obstacles.sdf"
     WORLD_NAME="Engelli Dünya"
+    GZ_WORLD_NAME="leo_obstacles"
 fi
 
 echo ""
@@ -70,33 +72,24 @@ echo ""
 # ── 1. Temizlik ───────────────────────────────────────────────────────
 echo "[1/5] Eski süreçler temizleniyor..."
 docker exec $CONTAINER bash -c "
-    # UKF / NavSat
-    pkill -9 -x ukf_node 2>/dev/null || true
-    pkill -9 -x navsat_transform_node 2>/dev/null || true
-    pkill -9 -x static_transform_publisher 2>/dev/null || true
-    # Nav2 standalone node adları
-    pkill -9 -x bt_navigator 2>/dev/null || true
-    pkill -9 -x lifecycle_manager 2>/dev/null || true
-    pkill -9 -x velocity_smoother 2>/dev/null || true
-    pkill -9 -x waypoint_follower 2>/dev/null || true
-    # Nav2 composition container (Nav2 varsayılan olarak component container kullanır)
-    pkill -9 -x component_container_isolated 2>/dev/null || true
-    # Nav2 package binary yollarına göre (component olarak çalışanlar)
-    pkill -9 -f nav2_controller/controller_server 2>/dev/null || true
-    pkill -9 -f nav2_planner/planner_server 2>/dev/null || true
-    pkill -9 -f nav2_behaviors/behavior_server 2>/dev/null || true
-    pkill -9 -f nav2_smoother/smoother_server 2>/dev/null || true
-    pkill -9 -f nav2_bt_navigator/bt_navigator 2>/dev/null || true
-    pkill -9 -f nav2_lifecycle_manager/lifecycle_manager 2>/dev/null || true
-    pkill -9 -f nav2_velocity_smoother/velocity_smoother 2>/dev/null || true
-    pkill -9 -f nav2_waypoint_follower/waypoint_follower 2>/dev/null || true
-    # Gazebo + köprüler
+    # Önce launch süreçlerini durdur (yeni node spawn etmesinler)
+    pkill -9 -f 'ros2 launch' 2>/dev/null || true
+    sleep 1
+    # Gazebo (killall ile kesin öldür)
+    killall -9 'ign gazebo' ruby 2>/dev/null || true
     pkill -9 -x gz 2>/dev/null || true
-    pkill -9 -x ign 2>/dev/null || true
-    pkill -9 -x robot_state_publisher 2>/dev/null || true
-    pkill -9 -x parameter_bridge 2>/dev/null || true
-    pkill -9 -x image_bridge 2>/dev/null || true
+    # UKF / NavSat
+    killall -9 ukf_node navsat_transform_node static_transform_publisher 2>/dev/null || true
+    # Nav2 node'ları
+    killall -9 bt_navigator lifecycle_manager velocity_smoother waypoint_follower \
+      controller_server planner_server smoother_server behavior_server \
+      component_container_isolated 2>/dev/null || true
+    # Köprüler
+    killall -9 robot_state_publisher parameter_bridge image_bridge 2>/dev/null || true
+    # Test script
+    pkill -9 -f test_dual_ukf 2>/dev/null || true
     sleep 3
+    echo 'Temizlik tamamlandı'
 " || true
 
 # ── 2. Build ──────────────────────────────────────────────────────────
@@ -109,9 +102,8 @@ docker exec $CONTAINER bash -c "
 
 # ── 3. Gazebo + Robot ────────────────────────────────────────────────
 echo "[3/5] Gazebo başlatılıyor ($WORLD_NAME)..."
-# GUI modunda başlat (-r = auto-run, GUI penceresi açılır)
-# X11 socket /tmp/.X11-unix bağlı, DISPLAY container'da =:0
-docker exec $CONTAINER bash -c "$SETUP && ros2 launch leo_gz_bringup leo_gz.launch.py sim_world:='-r $WORLD'" &
+GZ_ARGS="-r $WORLD"
+docker exec $CONTAINER bash -c "$SETUP && ros2 launch leo_gz_bringup leo_gz.launch.py sim_world:='$GZ_ARGS' world_name:=$GZ_WORLD_NAME" &
 GZ_PID=$!
 
 echo "  Gazebo yükleniyor (30s)..."
@@ -140,23 +132,23 @@ echo ""
 echo "  Nav2'nin tam hazır olması için 70s bekleniyor..."
 sleep 70
 
-# Nav2 lifecycle bringup race durumunda: önce RESET, sonra STARTUP
-echo "  Nav2 lifecycle startup kontrolü..."
-for i in $(seq 1 3); do
-    # Önce mevcut düğümlerin durumunu gör
-    ACTIVE_COUNT=$(docker exec $CONTAINER bash -c "$SETUP && timeout 3 ros2 action list 2>/dev/null | grep -c navigate_to_pose" 2>/dev/null || echo 0)
-    if [ "${ACTIVE_COUNT:-0}" -gt 0 ]; then
-        echo "  Nav2 action server aktif! ($i/3)"
-        break
-    fi
-    echo "  Nav2 lifecycle tetikleniyor... ($i/3)"
-    # Adım 1: RESET — bütün düğümleri unconfigured'a al
-    docker exec $CONTAINER bash -c "$SETUP && timeout 8 ros2 service call /lifecycle_manager_navigation/manage_nodes nav2_msgs/srv/ManageLifecycleNodes \"{command: 3}\"" >/dev/null 2>&1 || true
+# Nav2 lifecycle kontrol — eğer autostart başarılıysa ekstra müdahale gereksiz
+echo "  Nav2 lifecycle durumu kontrol ediliyor..."
+NAV2_ACTIVE=$(docker exec $CONTAINER bash -c "$SETUP && timeout 5 ros2 action list 2>/dev/null | grep -c navigate_to_pose" 2>/dev/null || echo 0)
+if [ "${NAV2_ACTIVE:-0}" -gt 0 ]; then
+    echo "  ✅ Nav2 lifecycle başarılı — tüm node'lar aktif"
+else
+    echo "  ⚠️  Nav2 autostart başarısız, lifecycle recovery deneniyor..."
+    # Reset → Startup
+    docker exec $CONTAINER bash -c "$SETUP && \
+        timeout 10 ros2 service call /lifecycle_manager_navigation/manage_nodes \
+        nav2_msgs/srv/ManageLifecycleNodes '{command: 3}'" >/dev/null 2>&1 || true
     sleep 3
-    # Adım 2: STARTUP — configure + activate
-    docker exec $CONTAINER bash -c "$SETUP && timeout 30 ros2 service call /lifecycle_manager_navigation/manage_nodes nav2_msgs/srv/ManageLifecycleNodes \"{command: 0}\"" >/dev/null 2>&1 || true
+    docker exec $CONTAINER bash -c "$SETUP && \
+        timeout 30 ros2 service call /lifecycle_manager_navigation/manage_nodes \
+        nav2_msgs/srv/ManageLifecycleNodes '{command: 0}'" >/dev/null 2>&1 || true
     sleep 5
-done
+fi
 
 # ── 4a. Durum Raporu ─────────────────────────────────────────────────
 echo ""
@@ -215,7 +207,7 @@ fi
 # ── 5. Test ───────────────────────────────────────────────────────────
 echo ""
 echo "════════════════════════════════════════"
-echo "  5 GPS WAYPOINT NAVİGASYON TESTİ"
+echo "  4 GPS WAYPOINT NAVİGASYON TESTİ"
 echo "════════════════════════════════════════"
 
 # Waypoints dosyasını container'a kopyala
@@ -225,7 +217,7 @@ docker cp "$WAYPOINTS" $CONTAINER:/tmp/waypoints.yaml 2>/dev/null || true
 # Test scriptini container'a kopyala
 docker cp "$HOME/ros-humble-sim/test_dual_ukf.py" $CONTAINER:/tmp/test_dual_ukf.py
 
-echo "  Dual-UKF doğrulama + 5 waypoint navigasyonu başlıyor..."
+echo "  Dual-UKF doğrulama + 4 waypoint navigasyonu başlıyor..."
 echo ""
 
 # Timeout ile testi çalıştır

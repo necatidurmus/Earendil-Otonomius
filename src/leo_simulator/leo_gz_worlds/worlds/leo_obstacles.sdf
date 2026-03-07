@@ -6,8 +6,8 @@
   Layout (50×50m, robot starts at 0,0):
     • 14 box obstacles  : 2×2×1.0m — impassable, lidar-visible
     •  2 wall segments  : long barriers creating a narrow-corridor scenario
-    •  6 terrain hills  : truncated spheres (R=2.0m, dome h=0.5m) — robot
-                          rolls over gentle domes; excite IMU & test UKF
+    • 13 terrain bumps  : truncated spheres — robot rolls over gentle domes;
+                          excite IMU & test UKF (LiDAR altında, costmap engeli değil)
 
   GPS datum: Ankara, Turkey (same as leo_empty.sdf)
 -->
@@ -95,51 +95,12 @@
       </link>
     </model>
 
-    <!-- ── Küçük taş/çakıl yığınları (gerçekçi arazi hissi) ───────────
-         6 basık boks → farklı boyut/renk, robot üzerinden geçebilir    -->
-    <model name="rock_01"><static>true</static><pose>1 2 0.08 0 0 0.5</pose>
-      <link name="link">
-        <collision name="c"><geometry><box><size>0.6 0.4 0.16</size></box></geometry></collision>
-        <visual name="v"><geometry><box><size>0.6 0.4 0.16</size></box></geometry>
-          <material><ambient>0.42 0.38 0.30 1</ambient><diffuse>0.50 0.45 0.35 1</diffuse></material>
-        </visual></link></model>
-    <model name="rock_02"><static>true</static><pose>-2 1 0.07 0 0 1.2</pose>
-      <link name="link">
-        <collision name="c"><geometry><box><size>0.5 0.3 0.14</size></box></geometry></collision>
-        <visual name="v"><geometry><box><size>0.5 0.3 0.14</size></box></geometry>
-          <material><ambient>0.38 0.34 0.27 1</ambient><diffuse>0.46 0.42 0.32 1</diffuse></material>
-        </visual></link></model>
-    <model name="rock_03"><static>true</static><pose>4 -2 0.09 0 0 0.8</pose>
-      <link name="link">
-        <collision name="c"><geometry><box><size>0.7 0.5 0.18</size></box></geometry></collision>
-        <visual name="v"><geometry><box><size>0.7 0.5 0.18</size></box></geometry>
-          <material><ambient>0.45 0.40 0.32 1</ambient><diffuse>0.53 0.47 0.37 1</diffuse></material>
-        </visual></link></model>
-    <model name="rock_04"><static>true</static><pose>-3 -4 0.06 0 0 0.3</pose>
-      <link name="link">
-        <collision name="c"><geometry><box><size>0.4 0.3 0.12</size></box></geometry></collision>
-        <visual name="v"><geometry><box><size>0.4 0.3 0.12</size></box></geometry>
-          <material><ambient>0.40 0.36 0.28 1</ambient><diffuse>0.48 0.43 0.33 1</diffuse></material>
-        </visual></link></model>
-    <model name="rock_05"><static>true</static><pose>6 1 0.10 0 0 1.5</pose>
-      <link name="link">
-        <collision name="c"><geometry><box><size>0.8 0.6 0.20</size></box></geometry></collision>
-        <visual name="v"><geometry><box><size>0.8 0.6 0.20</size></box></geometry>
-          <material><ambient>0.44 0.39 0.31 1</ambient><diffuse>0.52 0.46 0.36 1</diffuse></material>
-        </visual></link></model>
-    <model name="rock_06"><static>true</static><pose>-5 3 0.08 0 0 0.6</pose>
-      <link name="link">
-        <collision name="c"><geometry><box><size>0.6 0.45 0.16</size></box></geometry></collision>
-        <visual name="v"><geometry><box><size>0.6 0.45 0.16</size></box></geometry>
-          <material><ambient>0.41 0.37 0.29 1</ambient><diffuse>0.49 0.44 0.34 1</diffuse></material>
-        </visual></link></model>
-
     <!-- ════════════════════════════════════════════════════════════════
          BOX OBSTACLES  (2×2×1.0 m, grey)
          Each box: base at z=0, top at z=1.0 — fully lidar-visible
          ════════════════════════════════════════════════════════════════ -->
 
-    <model name="box_01"><static>true</static><pose>5 3 0.5 0 0 0</pose>
+    <model name="box_01"><static>true</static><pose>6 0 0.5 0 0 0</pose>
       <link name="link">
         <collision name="c"><geometry><box><size>2 2 1</size></box></geometry></collision>
         <visual name="v"><geometry><box><size>2 2 1</size></box></geometry>
@@ -184,7 +145,7 @@
       </link>
     </model>
 
-    <model name="box_06"><static>true</static><pose>8 8 0.5 0 0 0</pose>
+    <model name="box_06"><static>true</static><pose>9 10 0.5 0 0 0</pose>
       <link name="link">
         <collision name="c"><geometry><box><size>2 2 1</size></box></geometry></collision>
         <visual name="v"><geometry><box><size>2 2 1</size></box></geometry>
@@ -202,7 +163,7 @@
       </link>
     </model>
 
-    <model name="box_08"><static>true</static><pose>12 5 0.5 0 0 0</pose>
+    <model name="box_08"><static>true</static><pose>13 7 0.5 0 0 0</pose>
       <link name="link">
         <collision name="c"><geometry><box><size>2 2 1</size></box></geometry></collision>
         <visual name="v"><geometry><box><size>2 2 1</size></box></geometry>
@@ -304,10 +265,95 @@
 
     <!-- ════════════════════════════════════════════════════════════════
          TERRAIN HILLS  (kesik küreler — engebeli zemin)
-         Sphere R=2.0m, dome h=0.8m → centre at z=-1.2m.
-         Büyük bump: R=3.0m, dome h=1.0m → centre at z=-2.0m.
-         Robot bu tepelerin üzerinden geçer → IMU'yu zorlar, UKF'yi test eder.
+         Robot üzerinden geçer → IMU'yu zorlar, UKF'yi test eder.
+         Büyük küre: R=2.5-3.0m, dome h~0.5-0.8m
+         Orta küre:  R=1.5-2.0m, dome h~0.3-0.5m
+         Bazıları doğrudan waypoint rotaları üzerinde yerleştirilmiştir.
          ════════════════════════════════════════════════════════════════ -->
+
+    <!-- ── Rota üzeri bump'lar (robot bunlara tırmanmak ZORUNDA) ────── -->
+
+    <!-- WP1 rotası üzerinde (0,0)→(+4,+4) arası -->
+    <model name="bump_route_01">
+      <static>true</static>
+      <pose>2 2 -1.3 0 0 0</pose>
+      <link name="link">
+        <collision name="c">
+          <geometry><sphere><radius>1.8</radius></sphere></geometry>
+          <surface><friction><ode><mu>0.9</mu></ode></friction></surface>
+        </collision>
+        <visual name="v">
+          <geometry><sphere><radius>1.8</radius></sphere></geometry>
+          <material><ambient>0.55 0.42 0.25 1</ambient><diffuse>0.65 0.52 0.32 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- WP2 rotası üzerinde, (+4,+4)→(-4,+8) arası -->
+    <model name="bump_route_02">
+      <static>true</static>
+      <pose>0 6 -1.5 0 0 0</pose>
+      <link name="link">
+        <collision name="c">
+          <geometry><sphere><radius>2.0</radius></sphere></geometry>
+          <surface><friction><ode><mu>0.9</mu></ode></friction></surface>
+        </collision>
+        <visual name="v">
+          <geometry><sphere><radius>2.0</radius></sphere></geometry>
+          <material><ambient>0.50 0.40 0.22 1</ambient><diffuse>0.60 0.50 0.28 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- WP3 rotası üzerinde (-4,+8)→(+8,+2) arası -->
+    <model name="bump_route_03">
+      <static>true</static>
+      <pose>3 4 -1.2 0 0 0</pose>
+      <link name="link">
+        <collision name="c">
+          <geometry><sphere><radius>1.6</radius></sphere></geometry>
+          <surface><friction><ode><mu>0.9</mu></ode></friction></surface>
+        </collision>
+        <visual name="v">
+          <geometry><sphere><radius>1.6</radius></sphere></geometry>
+          <material><ambient>0.58 0.44 0.26 1</ambient><diffuse>0.68 0.54 0.33 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- WP4 rotası üzerinde (+8,+2)→(-5,-4) arası -->
+    <model name="bump_route_04">
+      <static>true</static>
+      <pose>1 -1 -1.4 0 0 0</pose>
+      <link name="link">
+        <collision name="c">
+          <geometry><sphere><radius>1.8</radius></sphere></geometry>
+          <surface><friction><ode><mu>0.9</mu></ode></friction></surface>
+        </collision>
+        <visual name="v">
+          <geometry><sphere><radius>1.8</radius></sphere></geometry>
+          <material><ambient>0.52 0.41 0.23 1</ambient><diffuse>0.62 0.51 0.29 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- WP5 dönüş rotası üzerinde (-5,-4)→(0,0) arası -->
+    <model name="bump_route_05">
+      <static>true</static>
+      <pose>-2.5 -2 -1.3 0 0 0</pose>
+      <link name="link">
+        <collision name="c">
+          <geometry><sphere><radius>1.7</radius></sphere></geometry>
+          <surface><friction><ode><mu>0.9</mu></ode></friction></surface>
+        </collision>
+        <visual name="v">
+          <geometry><sphere><radius>1.7</radius></sphere></geometry>
+          <material><ambient>0.56 0.43 0.24 1</ambient><diffuse>0.66 0.53 0.30 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ── Çevresel engebeler (arazi dalgası) ──────────────────────── -->
 
     <model name="bump_01">
       <static>true</static>
@@ -395,6 +441,37 @@
         <visual name="v">
           <geometry><sphere><radius>2.0</radius></sphere></geometry>
           <material><ambient>0.53 0.41 0.21 1</ambient><diffuse>0.63 0.51 0.27 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ── Geniş alçak dalgalar (tümsek) ──────────────────────────── -->
+    <model name="bump_wide_01">
+      <static>true</static>
+      <pose>5 -2 -3.5 0 0 0</pose>
+      <link name="link">
+        <collision name="c">
+          <geometry><sphere><radius>4.0</radius></sphere></geometry>
+          <surface><friction><ode><mu>0.8</mu></ode></friction></surface>
+        </collision>
+        <visual name="v">
+          <geometry><sphere><radius>4.0</radius></sphere></geometry>
+          <material><ambient>0.57 0.45 0.28 1</ambient><diffuse>0.67 0.55 0.35 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="bump_wide_02">
+      <static>true</static>
+      <pose>-3 8 -3.5 0 0 0</pose>
+      <link name="link">
+        <collision name="c">
+          <geometry><sphere><radius>4.0</radius></sphere></geometry>
+          <surface><friction><ode><mu>0.8</mu></ode></friction></surface>
+        </collision>
+        <visual name="v">
+          <geometry><sphere><radius>4.0</radius></sphere></geometry>
+          <material><ambient>0.54 0.43 0.26 1</ambient><diffuse>0.64 0.53 0.33 1</diffuse></material>
         </visual>
       </link>
     </model>

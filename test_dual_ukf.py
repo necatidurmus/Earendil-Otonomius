@@ -7,7 +7,7 @@ Dual-UKF mimarisini test eder:
   UKF Global (local+GPS)       → /odometry/filtered  +  map→odom TF
   NavSat     (GPS→map dönüşüm) → /odometry/gps       +  /fromLL servisi
 
-5 GPS waypoint'ini sırayla gezer ve her aşamada sensör füzyon
+4 GPS waypoint'ini sırayla gezer ve her aşamada sensör füzyon
 durumunu raporlar.
 
 Kullanım (container içinde):
@@ -33,13 +33,13 @@ import argparse
 import threading
 
 
-# ── 5 GPS Waypoint (Ankara civarı, datum: 39.925018, 32.836956) ─────────
+# ── 4 GPS Waypoint (Ankara civarı, datum: 39.925018, 32.836956) ─────────
+# Tüm noktalar engellerden en az 2.9m uzakta (grid search ile doğrulandı)
 DEFAULT_WAYPOINTS = [
-    {"lat": 39.925090, "lon": 32.837050, "name": "WP1: Kuzey-Dogu ~4m"},
-    {"lat": 39.925130, "lon": 32.836930, "name": "WP2: Kuzey-Bati ~8m"},
-    {"lat": 39.925054, "lon": 32.837100, "name": "WP3: Dogu ~8m"},
-    {"lat": 39.925000, "lon": 32.836900, "name": "WP4: Guney-Bati ~7m"},
-    {"lat": 39.925054, "lon": 32.836991, "name": "WP5: Baslangica don"},
+    {"lat": 39.925063, "lon": 32.836991, "name": "WP1: KD (+3,+5) uzk=3.0m"},
+    {"lat": 39.925117, "lon": 32.836886, "name": "WP2: KB (-6,+11) uzk=3.0m"},
+    {"lat": 39.925027, "lon": 32.837120, "name": "WP3: D (+14,+1) uzk=2.9m"},
+    {"lat": 39.924973, "lon": 32.836921, "name": "WP4: GB (-3,-5) uzk=3.9m"},
 ]
 
 
@@ -289,7 +289,7 @@ class DualUKFTest(Node):
         # Navigasyonu başlat
         self.get_logger().info('')
         self.get_logger().info('=' * 65)
-        self.get_logger().info('  5 WAYPOINT GPS NAVİGASYON TESTİ (Dual-UKF)')
+        self.get_logger().info('  4 WAYPOINT GPS NAVİGASYON TESTİ (Dual-UKF)')
         self.get_logger().info('=' * 65)
         for i, wp in enumerate(self.waypoints):
             cached = self._map_cache.get(i)

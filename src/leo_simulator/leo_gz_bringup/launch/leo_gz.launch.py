@@ -49,6 +49,14 @@ def generate_launch_description():
         description="Robot namespace",
     )
 
+    # Ignition Fortress dünyası adı — clock bridge için gerekli
+    # Fortress: /clock değil /world/<name>/clock yayınlar
+    world_name = DeclareLaunchArgument(
+        "world_name",
+        default_value="leo_empty",
+        description="Gazebo world name (SDF <world name=...>), used for clock bridge",
+    )
+
     # Setup to launch the simulator and Gazebo world
     gz_sim = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -65,12 +73,18 @@ def generate_launch_description():
     )
 
     # Bridge ROS topics and Gazebo messages for establishing communication
+    # Ignition Fortress clock topic: /world/<world_name>/clock
+    # Remap ile ROS tarafında /clock olarak yayınlanır
     topic_bridge = Node(
         package="ros_gz_bridge",
         executable="parameter_bridge",
         name="clock_bridge",
         arguments=[
-            "/clock@rosgraph_msgs/msg/Clock[ignition.msgs.Clock",
+            ["/world/", LaunchConfiguration("world_name"),
+             "/clock@rosgraph_msgs/msg/Clock[ignition.msgs.Clock"],
+        ],
+        remappings=[
+            (["/world/", LaunchConfiguration("world_name"), "/clock"], "/clock"),
         ],
         parameters=[
             {
@@ -84,6 +98,7 @@ def generate_launch_description():
         [
             sim_world,
             robot_ns,
+            world_name,
             gz_sim,
             topic_bridge,
             # Robot spawn 8 saniye geciktiriliyor: Gazebo'nun tamamen

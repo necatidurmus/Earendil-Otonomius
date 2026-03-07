@@ -24,9 +24,19 @@ Thumbs.db
 # Docker
 .docker/
 
-# Gemini
+# AI config
 .gemini/
+.claude/
 
 # Temporary
 *.log
 /tmp/
+
+# Office / docs
+*.docx
+*.xlsx
+*.pptx
+
+# Accidental PostScript outputs
+*.ps
+*.eps
