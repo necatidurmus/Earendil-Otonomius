@@ -52,8 +52,8 @@ def wait_for_topic(topic, max_wait=20):
     """Wait for a ROS 2 topic to become available."""
     print(f"  ⏳ {topic} bekleniyor...", end="", flush=True)
     for i in range(max_wait):
-        result = docker_exec(f"timeout 2 ros2 topic echo {topic} --once 2>/dev/null | head -1")
-        if result.stdout.strip():
+        result = docker_exec(f"ros2 topic list | grep '{topic}' 2>/dev/null")
+        if topic in result.stdout:
             print(" ✅")
             return True
         time.sleep(1)
@@ -76,7 +76,7 @@ def check_container():
 def build_workspace():
     """Build the ROS 2 workspace."""
     print("🔨 Workspace build ediliyor...")
-    docker_exec("cd /home/ros/ws && colcon build --packages-select leo_gz_bringup --symlink-install 2>&1 | tail -1")
+    docker_exec("cd /home/ros/ws && colcon build --packages-select leo_gz_worlds leo_gz_bringup --symlink-install 2>&1 | tail -1")
 
 
 def start_gazebo(world_name):
@@ -87,7 +87,7 @@ def start_gazebo(world_name):
 
     docker_exec(
         f"ros2 launch leo_gz_bringup leo_gz.launch.py "
-        f"sim_world:=$(ros2 pkg prefix leo_gz_worlds)/share/leo_gz_worlds/worlds/{world_file}.sdf "
+        f"sim_world:=/home/ros/ws/install/leo_gz_worlds/share/leo_gz_worlds/worlds/{world_file}.sdf "
         f"> /tmp/gazebo.log 2>&1",
         detach=True,
     )

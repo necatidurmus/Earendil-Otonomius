@@ -6,8 +6,9 @@ lifecycle_manager_navigation:
   ros__parameters:
     use_sim_time: True
     autostart: True
-    bond_timeout: 30.0          # Increased — avoids timeout during costmap init
+    bond_timeout: 60.0          # Increased — avoids timeout during costmap init
     attempt_respawn_reconnection: true
+    service_call_timeout_sec: 30.0   # Prevent race on configure (default 3.0s too short)
 
 bt_navigator:
   ros__parameters:

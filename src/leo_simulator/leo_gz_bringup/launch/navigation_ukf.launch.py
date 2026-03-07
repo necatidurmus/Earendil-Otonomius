@@ -3,16 +3,17 @@
 # Architecture:
 #   DiffDrive    → odom→base_footprint (Gazebo diff_drive plugin)
 #   UKF Local    → /odometry/local   (odom+IMU, world_frame: odom)
-#   NavSat       → /odometry/gps     (GPS→odom, yaw from /odometry/local)
-#   UKF Global   → map→odom TF       (local+GPS fused, world_frame: map)
-#                → /odometry/filtered (Nav2 input)
+#   UKF Global   → /odometry/filtered (local velocities, world_frame: map)
+#                → map→odom TF       (corrected by GPS once NavSat feeds in)
+#   NavSat       → /odometry/gps     (GPS→map, yaw from /odometry/filtered [UKF Global])
 #   Nav2         → goal-following    (no AMCL, no map_server)
 #
-# Startup sequence (timed to avoid deadlocks):
+# Startup sequence:
 #   t=0s  :  static_tf bootstrap + UKF Local (odom+IMU — no GPS dependency)
-#   t=3s  :  NavSat (needs /odometry/local for yaw; publishes /odometry/gps)
-#   t=6s  :  UKF Global (needs /odometry/gps; publishes map→odom TF)
-#   t=10s :  Nav2 (needs complete TF chain: map→odom→base_footprint)
+#   t=4s  :  UKF Global (needs /odometry/local; starts before NavSat so it can
+#             publish /odometry/filtered which NavSat needs for yaw)
+#   t=8s  :  NavSat (needs /odometry/filtered for yaw; outputs /odometry/gps in map frame)
+#   t=25s :  Nav2 (needs complete TF chain: map→odom→base_footprint)
 #
 # Usage:
 #   ros2 launch leo_gz_bringup navigation_ukf.launch.py
@@ -63,9 +64,11 @@ def generate_launch_description():
     )
 
     # ── NavSat Transform: GPS → /odometry/gps + /fromLL service ─────────
-    # Uses /odometry/local for yaw (use_odometry_yaw: true in navsat.yaml).
-    # Remapping: odometry/filtered → /odometry/local avoids circular
-    # dependency with UKF Global (which itself depends on /odometry/gps).
+    # Uses /odometry/filtered (UKF Global output, frame=map) for yaw.
+    # This way /odometry/gps is published in map frame → UKF Global
+    # can correctly anchor robot position.  The loop converges:
+    #   UKF Global → /odometry/filtered(map) → NavSat → /odometry/gps(map)
+    #   → UKF Global corrects map→odom TF  (no divergence)
     navsat = Node(
         package="robot_localization",
         executable="navsat_transform_node",
@@ -73,9 +76,9 @@ def generate_launch_description():
         output="screen",
         parameters=[navsat_config, {"use_sim_time": use_sim_time}],
         remappings=[
-            ("imu",               "/imu/data_raw"),
-            ("gps/fix",           "/navsat"),
-            ("odometry/filtered", "/odometry/local"),   # yaw from UKF Local
+            ("imu",     "/imu/data_raw"),
+            ("gps/fix", "/navsat"),
+            # No odometry/filtered remapping → uses /odometry/filtered from UKF Global
         ],
     )
 
@@ -109,12 +112,12 @@ def generate_launch_description():
         static_tf,
         ukf_local_node,
 
-        # t=3s — NavSat (needs /odometry/local for yaw extraction)
-        TimerAction(period=3.0, actions=[navsat]),
+        # t=4s — UKF Global (needs /odometry/local; starts early to publish /odometry/filtered for NavSat)
+        TimerAction(period=4.0, actions=[ukf_global_node]),
 
-        # t=6s — UKF Global (needs /odometry/gps from NavSat)
-        TimerAction(period=6.0, actions=[ukf_global_node]),
+        # t=8s — NavSat (needs /odometry/filtered from UKF Global for yaw; outputs /odometry/gps in map frame)
+        TimerAction(period=8.0, actions=[navsat]),
 
-        # t=10s — Nav2 (needs map→odom→base_footprint TF chain)
-        TimerAction(period=20.0, actions=[nav2]),
+        # t=25s — Nav2 (needs map→odom→base_footprint TF chain; extra margin for node services)
+        TimerAction(period=25.0, actions=[nav2]),
     ])

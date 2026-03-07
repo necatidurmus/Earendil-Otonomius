@@ -7,11 +7,11 @@ navsat_transform_node:
     use_sim_time: true
     frequency: 10.0
     delay: 0.0
-    magnetic_declination_radians: 0.0698  # ~4 deg for Ankara
-    yaw_offset: 0.0
+    magnetic_declination_radians: 0.0   # Simulation: no magnetic declination
+    yaw_offset: 0.0                     # Gazebo ENU, heading_deg=0 → yaw=0 is East
     zero_altitude: true
-    broadcast_utm_transform: false   # false → map origin = GPS datum, not UTM grid
+    broadcast_utm_transform: false
     publish_filtered_gps: true
-    wait_for_datum: true             # Use explicit datum below (Gazebo world origin)
-    datum: [39.925018, 32.836956, 890.0]   # Matches leo_obstacles.sdf spherical_coordinates
+    wait_for_datum: true
+    datum: [39.925018, 32.836956, 890.0]   # Exact match with leo_obstacles.sdf spherical_coordinates
     use_odometry_yaw: true

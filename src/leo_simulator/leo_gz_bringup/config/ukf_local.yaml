@@ -7,7 +7,7 @@
 ukf_local_node:
   ros__parameters:
     use_sim_time: true
-    frequency: 30.0
+    frequency: 15.0
     two_d_mode: true
     publish_tf: false         # DiffDrive provides odom->base_footprint
     print_diagnostics: true

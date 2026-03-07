@@ -12,8 +12,7 @@ WORLD="/home/ros/ws/install/leo_gz_worlds/share/leo_gz_worlds/worlds/leo_obstacl
 # ── 0. Eski süreçleri temizle ─────────────────────────────────────────────────
 echo "[1/4] Eski ROS/Gazebo süreçleri temizleniyor..."
 docker exec $CONTAINER bash -c "
-  pkill -9 -f 'ign gazebo|gz_sim|ukf_node|navsat_transform|bt_navigator|
-  controller_server|planner_server|lifecycle_manager' 2>/dev/null || true
+  pkill -9 -f 'ign gazebo|gz_sim|ukf_node|navsat_transform|bt_navigator|controller_server|planner_server|lifecycle_manager' 2>/dev/null || true
   sleep 2
 "
 
@@ -72,15 +71,63 @@ docker exec $CONTAINER bash -c "
   timeout 4 ros2 run tf2_ros tf2_echo map base_footprint 2>/dev/null | grep 'Translation' | head -1 || echo '  TF yok'
 "
 
+# ── 5. 5-Waypoint GPS Navigasyon Testi ───────────────────────────────────────
 echo ""
 echo "════════════════════════════════════════"
-echo "Navigasyon hedefi gönder (ayrı terminalde):"
+echo "5-WAYPOINT GPS NAVİGASYON TESTİ"
+echo "════════════════════════════════════════"
+
+WAYPOINTS="$HOME/ros-humble-sim/src/leo_simulator/leo_gz_bringup/config/waypoints.yaml"
+
+# Nav2 action server hazır mı kontrol et
+echo "  Nav2 action server bekleniyor (max 30s)..."
+NAV2_OK=false
+for i in $(seq 1 15); do
+  RESULT=$(docker exec $CONTAINER bash -c "$SETUP && timeout 2 ros2 action list 2>/dev/null | grep navigate_to_pose" || true)
+  if [ -n "$RESULT" ]; then
+    NAV2_OK=true
+    echo "  Nav2 hazır ✓"
+    break
+  fi
+  echo "  ...bekleniyor ($i/15)"
+  sleep 2
+done
+
+if [ "$NAV2_OK" = false ]; then
+  echo "  [HATA] Nav2 action server başlatılamadı — navigasyon testi atlanıyor."
+  echo "  Stack loglarını kontrol edin."
+else
+  echo ""
+  echo "  Waypoints dosyası: $WAYPOINTS"
+  echo "  5 nokta sırayla gönderiliyor..."
+  echo ""
+
+  # Waypoints dosyasını container içine kopyala
+  docker cp "$WAYPOINTS" $CONTAINER:/tmp/waypoints.yaml
+
+  # gps_waypoint_nav.py'yi container içinde çalıştır
+  docker exec $CONTAINER bash -c "
+    $SETUP
+    python3 /home/ros/ws/install/leo_gz_bringup/lib/leo_gz_bringup/gps_waypoint_nav.py \
+      --waypoints /tmp/waypoints.yaml
+  " &
+  NAV_TEST_PID=$!
+
+  echo "  Navigasyon testi PID: $NAV_TEST_PID"
+  echo "  (Ctrl+C ile durdurabilirsiniz)"
+  wait $NAV_TEST_PID
+  TEST_EXIT=$?
+
+  echo ""
+  if [ "$TEST_EXIT" -eq 0 ]; then
+    echo "  ✅ Waypoint testi tamamlandı."
+  else
+    echo "  ⚠️  Waypoint testi çıkış kodu: $TEST_EXIT"
+  fi
+fi
+
 echo ""
-echo "  docker exec -it ros2-dev bash"
-echo "  source /home/ros/ws/install/setup.bash"
-echo "  ros2 action send_goal /navigate_to_pose nav2_msgs/action/NavigateToPose \\"
-echo "    '{pose: {header: {frame_id: map}, pose: {position: {x: 8.0, y: -6.0, z: 0.0}, orientation: {w: 1.0}}}}' --feedback"
-echo ""
+echo "════════════════════════════════════════"
 echo "Durdurmak için: Ctrl+C"
 echo "════════════════════════════════════════"
 
