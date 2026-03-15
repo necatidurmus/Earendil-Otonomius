@@ -27,7 +27,8 @@ services:
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - ./src:/home/ros/ws/src:rw
-      - /home/necati/ros2_ws:/home/ros/ros2_ws:rw
+      - ./sim_config.yaml:/home/ros/ws/sim_config.yaml:ro
+      # - ${HOME}/ros2_ws:/home/ros/ros2_ws:rw  # Opsiyonel: harici ROS workspace
     devices:
       - /dev/dri:/dev/dri
     deploy:

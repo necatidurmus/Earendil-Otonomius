@@ -20,12 +20,35 @@
 #   ros2 launch leo_gz_bringup navigation_ukf.launch.py use_sim_time:=true
 
 import os
+import yaml
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, TimerAction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
+
+
+# ── sim_config.yaml oku ──────────────────────────────────────────────────
+def _load_config():
+    here = os.path.dirname(os.path.abspath(__file__))
+    for _ in range(6):
+        candidate = os.path.join(here, 'sim_config.yaml')
+        if os.path.isfile(candidate):
+            with open(candidate) as f:
+                return yaml.safe_load(f)
+        here = os.path.dirname(here)
+    return {}
+
+_CFG = _load_config()
+
+def _t(keys, default):
+    d = _CFG
+    for k in keys:
+        if not isinstance(d, dict) or k not in d:
+            return default
+        d = d[k]
+    return d
 
 
 def generate_launch_description():
@@ -105,6 +128,11 @@ def generate_launch_description():
         }.items(),
     )
 
+    # ── Timing değerleri sim_config.yaml'dan ───────────────────────────
+    T_UKF_GLOBAL = float(_t(['timing', 'ukf_global_start'],  4.0))
+    T_NAVSAT     = float(_t(['timing', 'navsat_start'],       8.0))
+    T_NAV2       = float(_t(['timing', 'nav2_start'],        40.0))
+
     return LaunchDescription([
         DeclareLaunchArgument("use_sim_time", default_value="true"),
 
@@ -112,12 +140,12 @@ def generate_launch_description():
         static_tf,
         ukf_local_node,
 
-        # t=4s — UKF Global (needs /odometry/local; starts early to publish /odometry/filtered for NavSat)
-        TimerAction(period=4.0, actions=[ukf_global_node]),
+        # t=Xs — UKF Global (needs /odometry/local; starts early to publish /odometry/filtered for NavSat)
+        TimerAction(period=T_UKF_GLOBAL, actions=[ukf_global_node]),
 
-        # t=8s — NavSat (needs /odometry/filtered from UKF Global for yaw; outputs /odometry/gps in map frame)
-        TimerAction(period=8.0, actions=[navsat]),
+        # t=Xs — NavSat (needs /odometry/filtered from UKF Global for yaw; outputs /odometry/gps in map frame)
+        TimerAction(period=T_NAVSAT, actions=[navsat]),
 
-        # t=40s — Nav2 (needs map→odom→base_footprint TF chain; extra margin for UKF convergence)
-        TimerAction(period=40.0, actions=[nav2]),
+        # t=Xs — Nav2 (needs map→odom→base_footprint TF chain; extra margin for UKF convergence)
+        TimerAction(period=T_NAV2, actions=[nav2]),
     ])

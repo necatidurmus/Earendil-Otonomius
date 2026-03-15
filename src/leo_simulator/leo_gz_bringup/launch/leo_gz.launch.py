@@ -27,7 +27,7 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, TimerAction
 from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration
+from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch_ros.actions import Node
 
 
@@ -57,12 +57,24 @@ def generate_launch_description():
         description="Gazebo world name (SDF <world name=...>), used for clock bridge",
     )
 
+    headless = DeclareLaunchArgument(
+        "headless",
+        default_value="false",
+        description="Run Gazebo in server-only (headless) mode",
+    )
+
     # Setup to launch the simulator and Gazebo world
+    gz_args = PythonExpression([
+        "'-r -s ' + '", LaunchConfiguration("sim_world"),
+        "' if '", LaunchConfiguration("headless"), "' == 'true' else '-r ' + '",
+        LaunchConfiguration("sim_world"), "'"
+    ])
+
     gz_sim = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(pkg_ros_gz_sim, "launch", "gz_sim.launch.py")
         ),
-        launch_arguments={"gz_args": LaunchConfiguration("sim_world")}.items(),
+        launch_arguments={"gz_args": gz_args}.items(),
     )
 
     spawn_robot = IncludeLaunchDescription(
@@ -99,6 +111,7 @@ def generate_launch_description():
             sim_world,
             robot_ns,
             world_name,
+            headless,
             gz_sim,
             topic_bridge,
             # Robot spawn 8 saniye geciktiriliyor: Gazebo'nun tamamen

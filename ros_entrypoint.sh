@@ -9,5 +9,10 @@ chmod 700 $XDG_RUNTIME_DIR
 # Setup ROS 2 environment
 source "/opt/ros/humble/setup.bash"
 
+# Source workspace if built
+if [ -f "/home/ros/ws/install/setup.bash" ]; then
+  source "/home/ros/ws/install/setup.bash"
+fi
+
 # Execute the command passed into this entrypoint
 exec "$@"

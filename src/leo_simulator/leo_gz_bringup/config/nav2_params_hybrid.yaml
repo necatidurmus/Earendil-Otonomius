@@ -1,0 +1,240 @@
+# Nav2 parametreleri — Hibrit GPS+SLAM navigasyon
+# GPS modunda: nav2_params_gps.yaml ile aynı (rolling costmap, no AMCL)
+# SLAM modunda: slam_toolbox harita sağlar, costmap static_layer açılır
+#
+# Bu dosya her iki mod için de çalışır:
+#   - GPS modu : global_frame=map, rolling costmap, GPS+UKF lokalizasyon
+#   - SLAM modu: global_frame=map, slam_toolbox haritası, LiDAR lokalizasyon
+#
+# Tünel/kapı geçişi için önemli ayarlar:
+#   - inflation_radius küçültüldü (0.90→0.55) → dar geçitlerde Nav2 plan üretebilir
+#   - xy_goal_tolerance küçültüldü (0.6→0.3)  → kapıda hassasiyet
+#   - voxel_layer aktif                        → 3D engel tespiti
+
+lifecycle_manager_navigation:
+  ros__parameters:
+    use_sim_time: True
+    autostart: True
+    bond_timeout: 60.0
+    attempt_respawn_reconnection: true
+    service_call_timeout_sec: 30.0
+
+bt_navigator:
+  ros__parameters:
+    use_sim_time: True
+    global_frame: map
+    robot_base_frame: base_footprint
+    odom_topic: /odometry/filtered
+    bt_loop_duration: 10
+    default_server_timeout: 20
+
+controller_server:
+  ros__parameters:
+    use_sim_time: True
+    controller_frequency: 10.0
+    min_x_velocity_threshold: 0.001
+    min_y_velocity_threshold: 0.001
+    min_theta_velocity_threshold: 0.001
+    failure_tolerance: 0.3
+    progress_checker_plugins: ["progress_checker"]
+    goal_checker_plugins: ["general_goal_checker"]
+    controller_plugins: ["FollowPath"]
+
+    progress_checker:
+      plugin: "nav2_controller::SimpleProgressChecker"
+      required_movement_radius: 0.3      # Dar geçitte daha az hareket gerekli
+      movement_time_allowance: 20.0
+
+    general_goal_checker:
+      stateful: True
+      plugin: "nav2_controller::SimpleGoalChecker"
+      xy_goal_tolerance: 0.3             # SLAM modunda daha hassas hedef
+      yaw_goal_tolerance: 0.3
+
+    FollowPath:
+      plugin: "dwb_core::DWBLocalPlanner"
+      debug_trajectory_details: True
+      min_vel_x: 0.0
+      min_vel_y: 0.0
+      max_vel_x: 0.4                     # Tünel/kapı için hız düşürüldü
+      max_vel_y: 0.0
+      max_vel_theta: 1.0
+      min_speed_xy: 0.0
+      max_speed_xy: 0.4
+      min_speed_theta: 0.0
+      acc_lim_x: 2.0                     # Yavaş ivme — dar geçit güvenliği
+      acc_lim_y: 0.0
+      acc_lim_theta: 2.5
+      decel_lim_x: -2.0
+      decel_lim_y: 0.0
+      decel_lim_theta: -2.5
+      vx_samples: 15
+      vy_samples: 1
+      vtheta_samples: 20
+      sim_time: 2.0                      # Daha uzun simülasyon → tünel dönüşü
+      linear_granularity: 0.05
+      angular_granularity: 0.025
+      transform_tolerance: 0.3
+      xy_goal_tolerance: 0.3
+      trans_stopped_velocity: 0.05
+      short_circuit_trajectory_evaluation: True
+      stateful: True
+      critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]
+      BaseObstacle.scale: 0.02
+      PathAlign.scale: 32.0
+      PathAlign.forward_point_distance: 0.1
+      GoalAlign.scale: 24.0
+      GoalAlign.forward_point_distance: 0.1
+      PathDist.scale: 32.0
+      GoalDist.scale: 24.0
+      RotateToGoal.scale: 32.0
+      RotateToGoal.slowing_factor: 5.0
+      RotateToGoal.lookahead_time: -1.0
+
+local_costmap:
+  local_costmap:
+    ros__parameters:
+      update_frequency: 5.0
+      publish_frequency: 2.0
+      global_frame: odom
+      robot_base_frame: base_footprint
+      use_sim_time: True
+      rolling_window: true
+      width: 8                           # Tünel için daha geniş yerel costmap
+      height: 8
+      resolution: 0.05
+      robot_radius: 0.35
+      plugins: ["voxel_layer", "inflation_layer"]
+      inflation_layer:
+        plugin: "nav2_costmap_2d::InflationLayer"
+        cost_scaling_factor: 2.5
+        inflation_radius: 0.55           # Duvardan uzak tutmak için artırıldı
+      voxel_layer:
+        plugin: "nav2_costmap_2d::VoxelLayer"
+        enabled: True
+        publish_voxel_map: True
+        origin_z: 0.0
+        z_resolution: 0.05
+        z_voxels: 16
+        max_obstacle_height: 2.5         # Tünel tavanını da tara
+        mark_threshold: 0
+        observation_sources: scan
+        scan:
+          topic: /scan
+          max_obstacle_height: 2.5
+          clearing: True
+          marking: True
+          data_type: "LaserScan"
+          raytrace_max_range: 8.0        # Tünel içinde daha kısa
+          raytrace_min_range: 0.10
+          obstacle_max_range: 6.0
+          obstacle_min_range: 0.10
+      always_send_full_costmap: True
+
+global_costmap:
+  global_costmap:
+    ros__parameters:
+      update_frequency: 1.0
+      publish_frequency: 0.5
+      global_frame: map
+      robot_base_frame: base_footprint
+      use_sim_time: True
+      robot_radius: 0.35
+      resolution: 0.05                   # İnce çözünürlük: kapı ayrıntısı
+      rolling_window: true               # SLAM haritası aktif olmadan da çalışır
+      width: 80
+      height: 80
+      track_unknown_space: false         # GPS modu: bilinmeyen alan engel değil
+      plugins: ["obstacle_layer", "inflation_layer"]
+      # static_layer kaldırıldı: SLAM Toolbox ilk haritayı oluşturana kadar
+      # 0x0 boş harita yayınlar → costmap "malformed map" hatası verir.
+      # rolling_window + obstacle_layer zaten LiDAR ile engel tespiti yapar.
+      obstacle_layer:
+        plugin: "nav2_costmap_2d::ObstacleLayer"
+        enabled: True
+        observation_sources: scan
+        scan:
+          topic: /scan
+          max_obstacle_height: 2.5
+          clearing: True
+          marking: True
+          data_type: "LaserScan"
+          raytrace_max_range: 8.0
+          raytrace_min_range: 0.10
+          obstacle_max_range: 6.0
+          obstacle_min_range: 0.10
+      inflation_layer:
+        plugin: "nav2_costmap_2d::InflationLayer"
+        cost_scaling_factor: 2.5
+        inflation_radius: 0.55           # Duvardan uzak tutmak için artırıldı
+      always_send_full_costmap: True
+
+planner_server:
+  ros__parameters:
+    expected_planner_frequency: 5.0
+    use_sim_time: True
+    planner_plugins: ["GridBased"]
+    GridBased:
+      plugin: "nav2_navfn_planner/NavfnPlanner"
+      tolerance: 0.3                     # SLAM modunda daha az tolerans
+      use_astar: true
+      allow_unknown: true                # Tünel içinde bilinmeyen alanlara izin
+
+smoother_server:
+  ros__parameters:
+    use_sim_time: True
+    smoother_plugins: ["simple_smoother"]
+    simple_smoother:
+      plugin: "nav2_smoother::SimpleSmoother"
+      tolerance: 1.0e-10
+      max_its: 1000
+      do_refinement: True
+
+behavior_server:
+  ros__parameters:
+    costmap_topic: local_costmap/costmap_raw
+    footprint_topic: local_costmap/published_footprint
+    cycle_frequency: 10.0
+    behavior_plugins: ["spin", "backup", "drive_on_heading", "wait"]
+    spin:
+      plugin: "nav2_behaviors/Spin"
+    backup:
+      plugin: "nav2_behaviors/BackUp"
+    drive_on_heading:
+      plugin: "nav2_behaviors/DriveOnHeading"
+    wait:
+      plugin: "nav2_behaviors/Wait"
+    global_frame: odom
+    robot_base_frame: base_footprint
+    transform_tolerance: 0.2
+    use_sim_time: true
+    simulate_ahead_time: 2.0
+    max_rotational_vel: 0.8              # Tünel içinde yavaş dönüş
+    min_rotational_vel: 0.3
+    rotational_acc_lim: 2.5
+
+waypoint_follower:
+  ros__parameters:
+    use_sim_time: True
+    loop_rate: 20
+    stop_on_failure: false
+    waypoint_task_executor_plugin: "wait_at_waypoint"
+    wait_at_waypoint:
+      plugin: "nav2_waypoint_follower::WaitAtWaypoint"
+      enabled: True
+      waypoint_pause_duration: 200
+
+velocity_smoother:
+  ros__parameters:
+    use_sim_time: True
+    smoothing_frequency: 20.0
+    scale_velocities: False
+    feedback: "OPEN_LOOP"
+    max_velocity: [0.4, 0.0, 1.0]       # Tünel/kapı için düşük max hız
+    min_velocity: [-0.4, 0.0, -1.0]
+    max_accel: [2.0, 0.0, 2.5]
+    max_decel: [-2.0, 0.0, -2.5]
+    odom_topic: "/odometry/filtered"
+    odom_duration: 0.1
+    deadband_velocity: [0.0, 0.0, 0.0]
+    velocity_timeout: 1.0

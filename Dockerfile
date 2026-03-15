@@ -27,6 +27,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-humble-slam-toolbox \
     ros-humble-robot-localization \
     ros-humble-twist-mux \
+    ros-humble-generate-parameter-library \
     && rm -rf /var/lib/apt/lists/* \
     && locale-gen en_US.UTF-8
 
@@ -46,12 +47,16 @@ RUN groupadd --gid $USER_GID $USERNAME \
 COPY ros_entrypoint.sh /ros_entrypoint.sh
 RUN chmod +x /ros_entrypoint.sh
 
+# Create workspace directory with correct ownership
+RUN mkdir -p /home/$USERNAME/ws && chown $USERNAME:$USERNAME /home/$USERNAME/ws
+
 # User Setup
 USER $USERNAME
 WORKDIR /home/$USERNAME/ws
 
-# Source ROS setup in .bashrc options
-RUN echo "source /opt/ros/humble/setup.bash" >> /home/$USERNAME/.bashrc
+# Source ROS + workspace setup in .bashrc
+RUN echo "source /opt/ros/humble/setup.bash" >> /home/$USERNAME/.bashrc \
+    && echo "test -f /home/$USERNAME/ws/install/setup.bash && source /home/$USERNAME/ws/install/setup.bash" >> /home/$USERNAME/.bashrc
 
 ENTRYPOINT ["/ros_entrypoint.sh"]
 CMD ["bash"]

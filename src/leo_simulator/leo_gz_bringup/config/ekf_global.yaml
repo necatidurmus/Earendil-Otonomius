@@ -15,7 +15,7 @@ ekf_filter_node:
     # Frames
     map_frame: map
     odom_frame: odom
-    base_link_frame: base_link
+    base_link_frame: base_footprint
     world_frame: map          # GPS-anchored global frame
 
     # Wheel odometry — trust velocities only
@@ -44,3 +44,7 @@ ekf_filter_node:
                    false, false, false,   # vroll, vpitch, vyaw
                    false, false, false]   # ax, ay, az
     odom1_differential: false
+
+    # GPS mesajları SLAM modunda durabileceğinden, rejeksiyon eşiği ile
+    # geri dönen kötü GPS konumlarının filtreyi bozmasını engelle
+    odom1_rejection_threshold: 5.0     # 5 Mahalanobis mesafesi üstünü reddet

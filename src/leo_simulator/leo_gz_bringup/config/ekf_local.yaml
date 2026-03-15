@@ -13,7 +13,7 @@ ekf_local_node:
     # Frames
     map_frame: map
     odom_frame: odom
-    base_link_frame: base_link
+    base_link_frame: base_footprint
     world_frame: odom         # Local: odom-level
 
     # Wheel odometry — trust velocities only

@@ -33,6 +33,28 @@ import argparse
 import threading
 
 
+# ── sim_config.yaml oku ──────────────────────────────────────────────────
+def _load_sim_config():
+    here = os.path.dirname(os.path.abspath(__file__))
+    for _ in range(6):
+        candidate = os.path.join(here, 'sim_config.yaml')
+        if os.path.isfile(candidate):
+            with open(candidate) as f:
+                return yaml.safe_load(f)
+        here = os.path.dirname(here)
+    return {}
+
+_SIM_CFG = _load_sim_config()
+
+def _cfg(keys, default):
+    d = _SIM_CFG
+    for k in keys:
+        if not isinstance(d, dict) or k not in d:
+            return default
+        d = d[k]
+    return d
+
+
 # ── 4 GPS Waypoint (Ankara civarı, datum: 39.925018, 32.836956) ─────────
 # Tüm noktalar engellerden en az 2.9m uzakta (grid search ile doğrulandı)
 DEFAULT_WAYPOINTS = [
@@ -492,7 +514,20 @@ def main():
                         help='Waypoints YAML dosyası yolu')
     parser.add_argument('--skip-verify', action='store_true',
                         help='Dual-UKF doğrulama adımını atla')
+    parser.add_argument('--config', '-c', type=str, default=None,
+                        help='sim_config.yaml dosya yolu (override)')
     args, unknown = parser.parse_known_args()
+
+    # Config override
+    if args.config and os.path.isfile(args.config):
+        global _SIM_CFG
+        with open(args.config) as f:
+            _SIM_CFG = yaml.safe_load(f)
+
+    # Config'den parametreleri göster
+    print(f'  Config: wheel_radius={_cfg(["robot","wheel_radius"], 0.125)}m, '
+          f'max_speed={_cfg(["robot","max_speed_ms"], 0.4)}m/s, '
+          f'gravity_z={_cfg(["gravity","z"], -9.81)}')
 
     # Waypoints dosyası bul
     waypoints = None

@@ -40,3 +40,5 @@ Thumbs.db
 # Accidental PostScript outputs
 *.ps
 *.eps
+rclpy
+sys

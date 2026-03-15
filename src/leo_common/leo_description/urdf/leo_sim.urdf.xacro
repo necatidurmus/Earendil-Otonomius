@@ -6,10 +6,32 @@
   <xacro:arg name="robot_ns" default=""/>
   <xacro:arg name="mecanum_wheels" default="false"/>
 
+  <!-- sim_config.yaml'dan geçirilebilir fizik parametreleri -->
+  <xacro:arg name="wheel_mu" default="3"/>
+  <xacro:arg name="wheel_mu2" default="3"/>
+  <xacro:arg name="wheel_slip1" default="0.001"/>
+  <xacro:arg name="wheel_slip2" default="0"/>
+  <xacro:arg name="body_mu" default="0.3"/>
+  <xacro:arg name="body_mu2" default="0.3"/>
+  <xacro:arg name="wheel_separation" default="0.716"/>
+  <xacro:arg name="wheel_radius" default="0.125"/>
+  <xacro:arg name="max_linear_accel" default="25.0"/>
+  <xacro:arg name="max_angular_accel" default="30.0"/>
+
   <xacro:include filename="$(find leo_description)/urdf/macros.xacro"/>
 
   <xacro:leo_sim robot_ns="$(arg robot_ns)"
                  fixed="$(arg fixed)"
-                 mecanum_wheels="$(arg mecanum_wheels)"/>
+                 mecanum_wheels="$(arg mecanum_wheels)"
+                 wheel_mu="$(arg wheel_mu)"
+                 wheel_mu2="$(arg wheel_mu2)"
+                 wheel_slip1="$(arg wheel_slip1)"
+                 wheel_slip2="$(arg wheel_slip2)"
+                 body_mu="$(arg body_mu)"
+                 body_mu2="$(arg body_mu2)"
+                 wheel_separation="$(arg wheel_separation)"
+                 wheel_radius="$(arg wheel_radius)"
+                 max_linear_accel="$(arg max_linear_accel)"
+                 max_angular_accel="$(arg max_angular_accel)"/>
 
 </robot>

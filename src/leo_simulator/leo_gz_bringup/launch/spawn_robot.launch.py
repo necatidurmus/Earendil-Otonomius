@@ -27,6 +27,29 @@ from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 import xacro
+import yaml
+
+
+# ── sim_config.yaml oku ──────────────────────────────────────────────────
+def _load_config():
+    here = os.path.dirname(os.path.abspath(__file__))
+    for _ in range(6):
+        candidate = os.path.join(here, 'sim_config.yaml')
+        if os.path.isfile(candidate):
+            with open(candidate) as f:
+                return yaml.safe_load(f)
+        here = os.path.dirname(here)
+    return {}
+
+_CFG = _load_config()
+
+def _c(keys, default):
+    d = _CFG
+    for k in keys:
+        if not isinstance(d, dict) or k not in d:
+            return default
+        d = d[k]
+    return d
 
 
 def spawn_robot(context: LaunchContext, namespace: LaunchConfiguration):
@@ -39,7 +62,19 @@ def spawn_robot(context: LaunchContext, namespace: LaunchConfiguration):
             "urdf",
             "leo_sim.urdf.xacro",
         ),
-        mappings={"robot_ns": robot_ns},
+        mappings={
+            "robot_ns":          robot_ns,
+            "wheel_mu":          str(_c(['robot', 'wheel_mu'],          3)),
+            "wheel_mu2":         str(_c(['robot', 'wheel_mu2'],         3)),
+            "wheel_slip1":       str(_c(['robot', 'wheel_slip1'],       0.001)),
+            "wheel_slip2":       str(_c(['robot', 'wheel_slip2'],       0)),
+            "body_mu":           str(_c(['robot', 'body_mu'],           0.3)),
+            "body_mu2":          str(_c(['robot', 'body_mu2'],          0.3)),
+            "wheel_separation":  str(_c(['robot', 'wheel_separation'],  0.716)),
+            "wheel_radius":      str(_c(['robot', 'wheel_radius'],      0.125)),
+            "max_linear_accel":  str(_c(['robot', 'max_linear_accel'],  25.0)),
+            "max_angular_accel": str(_c(['robot', 'max_angular_accel'], 30.0)),
+        },
     )
 
     if robot_ns == "":

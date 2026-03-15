@@ -11,12 +11,35 @@
 # Usage: ros2 launch leo_gz_bringup navigation_ekf.launch.py
 
 import os
+import yaml
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, TimerAction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
+
+
+# ── sim_config.yaml oku ──────────────────────────────────────────────────
+def _load_config():
+    here = os.path.dirname(os.path.abspath(__file__))
+    for _ in range(6):
+        candidate = os.path.join(here, 'sim_config.yaml')
+        if os.path.isfile(candidate):
+            with open(candidate) as f:
+                return yaml.safe_load(f)
+        here = os.path.dirname(here)
+    return {}
+
+_CFG = _load_config()
+
+def _t(keys, default):
+    d = _CFG
+    for k in keys:
+        if not isinstance(d, dict) or k not in d:
+            return default
+        d = d[k]
+    return d
 
 
 def generate_launch_description():
@@ -72,6 +95,11 @@ def generate_launch_description():
         }.items(),
     )
 
+    # ── Timing değerleri sim_config.yaml'dan ───────────────────────────
+    # EKF mimarisi daha basit, navsat daha erken başlayabilir
+    T_NAVSAT = float(_t(['timing', 'navsat_start'], 8.0)) / 2.0   # EKF tek katman, daha hızlı
+    T_NAV2   = float(_t(['timing', 'nav2_start'],  40.0))
+
     return LaunchDescription([
         DeclareLaunchArgument("use_sim_time", default_value="true"),
         # Static TF bootstrap (EKF overrides once data flows)
@@ -79,7 +107,7 @@ def generate_launch_description():
         # EKF starts immediately
         ekf_node,
         # NavSat needs EKF filtered output
-        TimerAction(period=3.0, actions=[navsat]),
+        TimerAction(period=T_NAVSAT, actions=[navsat]),
         # Nav2 needs map->odom->base_footprint TF chain
-        TimerAction(period=8.0, actions=[nav2]),
+        TimerAction(period=T_NAV2, actions=[nav2]),
     ])
