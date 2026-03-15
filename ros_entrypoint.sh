@@ -1,18 +1,12 @@
 #!/bin/bash
 set -e
 
-# Ensure XDG_RUNTIME_DIR exists
-export XDG_RUNTIME_DIR=/tmp/runtime-ros
-mkdir -p $XDG_RUNTIME_DIR
-chmod 700 $XDG_RUNTIME_DIR
-
-# Setup ROS 2 environment
-source "/opt/ros/humble/setup.bash"
+# Source ROS setup
+source /opt/ros/humble/setup.bash
 
 # Source workspace if built
-if [ -f "/home/ros/ws/install/setup.bash" ]; then
-  source "/home/ros/ws/install/setup.bash"
+if [ -f /home/ros/ws/install/setup.bash ]; then
+    source /home/ros/ws/install/setup.bash
 fi
 
-# Execute the command passed into this entrypoint
 exec "$@"

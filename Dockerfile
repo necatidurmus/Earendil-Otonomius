@@ -1,33 +1,21 @@
-FROM osrf/ros:humble-desktop-full
+FROM ros:humble
 
 # Env setup
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=en_US.UTF-8
 ENV LC_ALL=en_US.UTF-8
 
-# Install general tools
+# Install navigation & sensor fusion packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    bash-completion \
     build-essential \
     cmake \
-    gdb \
-    git \
-    nano \
     python3-pip \
-    terminator \
-    vim \
-    wget \
-    x11-apps \
-    ros-humble-ros-gz \
-    mesa-utils \
     locales \
-    # Navigation & SLAM packages
     ros-humble-navigation2 \
     ros-humble-nav2-bringup \
     ros-humble-slam-toolbox \
     ros-humble-robot-localization \
     ros-humble-twist-mux \
-    ros-humble-generate-parameter-library \
     && rm -rf /var/lib/apt/lists/* \
     && locale-gen en_US.UTF-8
 
@@ -41,7 +29,8 @@ RUN groupadd --gid $USER_GID $USERNAME \
     && apt-get update \
     && apt-get install -y sudo \
     && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME \
-    && chmod 0440 /etc/sudoers.d/$USERNAME
+    && chmod 0440 /etc/sudoers.d/$USERNAME \
+    && rm -rf /var/lib/apt/lists/*
 
 # Setup ROS environment
 COPY ros_entrypoint.sh /ros_entrypoint.sh
