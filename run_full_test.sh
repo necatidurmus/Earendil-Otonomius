@@ -46,50 +46,29 @@ warn() { echo -e "${YELLOW}[$(date +%H:%M:%S)] ⚠ $*${NC}"; }
 
 echo ""
 echo -e "${BOLD}${CYAN}╔══════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${BOLD}${CYAN}║   LEO ROVER — TEK KOMUT HİBRİT GPS+SLAM TAM TEST v0.2     ║${NC}"
+echo -e "${BOLD}${CYAN}║   LEO ROVER — TEK KOMUT HİBRİT GPS+SLAM TAM TEST v0.3     ║${NC}"
 echo -e "${BOLD}${CYAN}╚══════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
 cleanup() {
-  log "Temizlik yapılıyor..."
-  docker exec "$CONTAINER" bash -c "
-    pkill -9 -f 'ign gazebo'          2>/dev/null || true
-    pkill -9 -f 'parameter_bridge'    2>/dev/null || true
-    pkill -9 -f 'image_bridge'        2>/dev/null || true
-    pkill -9 -f 'robot_state_publisher' 2>/dev/null || true
-    pkill -9 -f 'ukf_node'            2>/dev/null || true
-    pkill -9 -f 'slam_toolbox'        2>/dev/null || true
-    pkill -9 -f 'gps_monitor'         2>/dev/null || true
-    pkill -9 -f 'mission_manager'     2>/dev/null || true
-    pkill -9 -f 'tf_mode_relay'       2>/dev/null || true
-    pkill -9 -f 'tunnel_gps_spoofer'  2>/dev/null || true
-    pkill -9 -f 'bt_navigator'        2>/dev/null || true
-    pkill -9 -f 'controller_server'   2>/dev/null || true
-    pkill -9 -f 'planner_server'      2>/dev/null || true
-    pkill -9 -f 'navsat_transform'    2>/dev/null || true
-    pkill -9 -f 'lifecycle_manager'   2>/dev/null || true
-    pkill -9 -f 'ros2'                2>/dev/null || true
-    sleep 2
-  " 2>/dev/null || true
+  log "Temizlik yapılıyor (container restart)..."
+  docker restart "$CONTAINER" >/dev/null 2>&1 || true
+  sleep 3
 }
 
 # ── 0. Docker container başlat ────────────────────────────────────────────
 log "Docker container kontrol ediliyor..."
 
 if docker ps --format '{{.Names}}' | grep -q "^${CONTAINER}$"; then
-  ok "Container '$CONTAINER' zaten çalışıyor"
-  # Önceki processleri temizle
-  log "Önceki session temizleniyor..."
-  cleanup
-  # Zombie process kontrolü — varsa container restart
-  ZOMBIES=$(docker exec "$CONTAINER" bash -c "ps aux | grep -c '^\S\+\s\+[0-9]\+.*Z'" 2>/dev/null || echo "0")
-  if [[ "$ZOMBIES" -gt 1 ]]; then
-    warn "Zombie processler tespit edildi, container yeniden başlatılıyor..."
-    docker restart "$CONTAINER"
-    sleep 5
-  fi
-  # Eski logları temizle
-  docker exec "$CONTAINER" bash -c "rm -f /tmp/gazebo.log /tmp/navigation.log /tmp/mission.log /tmp/nav.log" 2>/dev/null || true
+  ok "Container '$CONTAINER' mevcut"
+  # Container restart — zombie processleri ve eski session'ları temizler
+  log "Temiz başlangıç için container yeniden başlatılıyor..."
+  docker restart "$CONTAINER" >/dev/null 2>&1
+  for i in $(seq 1 15); do
+    if docker exec "$CONTAINER" true 2>/dev/null; then break; fi
+    sleep 1
+  done
+  ok "Container '$CONTAINER' temiz olarak hazır"
 else
   if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER}$"; then
     log "Container durdurulmuş, kaldırılıyor..."
@@ -101,11 +80,8 @@ else
   xhost +local:docker 2>/dev/null || true
   docker compose up -d --build 2>&1 | tail -5
   
-  # Container'ın tamamen hazır olmasını bekle
   for i in $(seq 1 30); do
-    if docker ps --format '{{.Names}}' | grep -q "^${CONTAINER}$"; then
-      break
-    fi
+    if docker ps --format '{{.Names}}' | grep -q "^${CONTAINER}$"; then break; fi
     sleep 1
   done
 
@@ -118,6 +94,11 @@ fi
 
 # X11 erişimi
 xhost +local:docker 2>/dev/null || true
+
+# Eski logları temizle
+docker exec "$CONTAINER" bash -c "
+  rm -f /tmp/gazebo.log /tmp/navigation.log /tmp/mission.log /tmp/nav.log /tmp/waypoint_test.log
+" 2>/dev/null || true
 
 # ── 1. Build ──────────────────────────────────────────────────────────────
 if $DO_BUILD; then

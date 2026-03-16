@@ -11,6 +11,7 @@
 #    ./run_hybrid_test.sh --world empty      # Boş dünya (SLAM testi yok)
 #    ./run_hybrid_test.sh --rviz             # RViz ile görselleştir
 #    ./run_hybrid_test.sh --timeout 600      # 10 dakika timeout
+#    ./run_hybrid_test.sh --no-restart       # Container restart atla
 # ═══════════════════════════════════════════════════════════════════════════
 
 set -euo pipefail
@@ -18,6 +19,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CONFIG="$SCRIPT_DIR/sim_config.yaml"
 CONTAINER="ros2-dev"
+SKIP_RESTART=false
 
 # ── sim_config.yaml oku ───────────────────────────────────────────────────
 if [[ -f "$CONFIG" ]]; then
@@ -47,9 +49,10 @@ fi
 # ── Argüman ayrıştırma (config'i override eder) ───────────────────────────
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --world)    WORLD="$2";   shift 2 ;;
-    --timeout)  TIMEOUT="$2"; shift 2 ;;
-    --rviz)     LAUNCH_RVIZ=true; shift ;;
+    --world)        WORLD="$2";   shift 2 ;;
+    --timeout)      TIMEOUT="$2"; shift 2 ;;
+    --rviz)         LAUNCH_RVIZ=true; shift ;;
+    --no-restart)   SKIP_RESTART=true; shift ;;
     -h|--help)
       grep '^#' "$0" | sed 's/^# \?//'
       exit 0 ;;
@@ -95,17 +98,37 @@ echo "  Tekerlek mu    : ${CFG_WHEEL_MU}"
 echo "  Max hiz        : ${CFG_MAX_SPEED} m/s"
 echo ""
 
-# ── Docker container kontrolü ─────────────────────────────────────────────
-if ! docker ps --format '{{.Names}}' | grep -q "^${CONTAINER}$"; then
-  echo -e "${RED}Hata: '${CONTAINER}' container'ı çalışmıyor!${NC}"
-  echo "  docker-compose up -d  ile başlatın"
-  exit 1
-fi
-
-echo -e "${GREEN}✓ Container '$CONTAINER' hazır${NC}"
-
 # ── X11 erişimi ───────────────────────────────────────────────────────────
 xhost +local:docker 2>/dev/null || true
+
+# ── Container temiz başlangıç (zombie process sorununu kökten çözer) ──────
+# PID 1 = sleep infinity olduğundan zombie'ler birikir.
+# Container restart tüm eski processleri temizler.
+if [[ "$SKIP_RESTART" == "false" ]]; then
+  echo "🔄 Container temiz başlangıç için yeniden başlatılıyor..."
+  docker restart "$CONTAINER" >/dev/null 2>&1
+  # Container'ın tamamen ayağa kalkmasını bekle
+  for i in $(seq 1 15); do
+    if docker exec "$CONTAINER" true 2>/dev/null; then
+      break
+    fi
+    sleep 1
+  done
+  echo -e "${GREEN}✓ Container '$CONTAINER' temiz olarak hazır${NC}"
+else
+  # Container kontrolü
+  if ! docker ps --format '{{.Names}}' | grep -q "^${CONTAINER}$"; then
+    echo -e "${RED}Hata: '${CONTAINER}' container'ı çalışmıyor!${NC}"
+    echo "  docker-compose up -d  ile başlatın"
+    exit 1
+  fi
+  echo -e "${GREEN}✓ Container '$CONTAINER' hazır (restart atlandı)${NC}"
+fi
+
+# ── Eski logları temizle ──────────────────────────────────────────────────
+docker exec "$CONTAINER" bash -c "
+  rm -f /tmp/gazebo.log /tmp/navigation.log /tmp/waypoint_test.log /tmp/mission.log
+" 2>/dev/null || true
 
 # ── Paket build (Docker içinde) ───────────────────────────────────────────
 echo ""
@@ -116,16 +139,6 @@ docker exec "$CONTAINER" bash -c "
   colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release 2>&1 | tail -12
 "
 echo -e "${GREEN}✓ Build tamamlandı${NC}"
-
-# ── Önceki processleri temizle ────────────────────────────────────────────
-echo ""
-echo "🧹 Önceki session temizleniyor..."
-docker exec "$CONTAINER" bash -c "
-  pkill -f 'ros2 launch' 2>/dev/null || true
-  pkill -f 'gz sim'      2>/dev/null || true
-  pkill -f 'rviz2'       2>/dev/null || true
-  sleep 2
-" 2>/dev/null || true
 
 # ── 1. Gazebo başlat ──────────────────────────────────────────────────────
 echo ""
@@ -141,6 +154,15 @@ docker exec -d "$CONTAINER" bash -c "
 echo "  Gazebo başlıyor (${CFG_GAZEBO_WAIT}s bekleniyor)..."
 sleep "$CFG_GAZEBO_WAIT"
 
+# Gazebo process kontrolü
+if docker exec "$CONTAINER" bash -c "pgrep -f 'ign gazebo' >/dev/null 2>&1"; then
+  echo -e "  ${GREEN}✓ Gazebo çalışıyor${NC}"
+else
+  echo -e "  ${RED}✗ Gazebo başlatılamadı! Log:${NC}"
+  docker exec "$CONTAINER" bash -c "tail -20 /tmp/gazebo.log 2>/dev/null" || true
+  exit 1
+fi
+
 # ── 2. Hibrit navigasyon başlat ───────────────────────────────────────────
 echo ""
 echo -e "${BOLD}[2/3] Hibrit navigasyon başlatılıyor...${NC}"
@@ -150,7 +172,7 @@ echo "  t=+${CFG_NAVSAT}s   → NavSat Transform"
 echo "  t=+${CFG_NAV2}s  → Nav2"
 
 RVIZ_ARG="false"
-[[ "$LAUNCH_RVIZ" == "true" ]] && RVIZ_ARG="true"
+[[ "$LAUNCH_RVIZ" == "true" || "$LAUNCH_RVIZ" == "True" ]] && RVIZ_ARG="true"
 
 docker exec -d "$CONTAINER" bash -c "
   source /opt/ros/humble/setup.bash
@@ -163,9 +185,29 @@ docker exec -d "$CONTAINER" bash -c "
 echo "  Navigasyon stack başlıyor (${CFG_NAV_WAIT}s bekleniyor)..."
 sleep "$CFG_NAV_WAIT"
 
-# ── GPS Monitor durum kontrolü ────────────────────────────────────────────
+# Nav2 hazırlık kontrolü (navigate_to_pose action server)
 echo ""
-echo "🔍 GPS Monitor modu:"
+echo "🔍 Nav2 + GPS Monitor hazırlık kontrolü..."
+NAV2_READY=false
+for i in $(seq 1 10); do
+  if docker exec "$CONTAINER" bash -c "
+    source /opt/ros/humble/setup.bash
+    ros2 action list 2>/dev/null | grep -q navigate_to_pose
+  " 2>/dev/null; then
+    NAV2_READY=true
+    break
+  fi
+  echo "  Nav2 bekleniyor... (${i}/10)"
+  sleep 5
+done
+
+if [[ "$NAV2_READY" == "true" ]]; then
+  echo -e "  ${GREEN}✓ Nav2 action server hazır${NC}"
+else
+  echo -e "  ${YELLOW}⚠ Nav2 henüz hazır olmayabilir, devam ediliyor...${NC}"
+fi
+
+# GPS Monitor modu
 docker exec "$CONTAINER" bash -c "
   source /opt/ros/humble/setup.bash
   timeout 5 ros2 topic echo /nav_mode --once 2>/dev/null || echo '  (henüz hazır değil)'
@@ -175,16 +217,23 @@ docker exec "$CONTAINER" bash -c "
 echo ""
 echo -e "${BOLD}[3/3] Waypoint navigasyon testi başlıyor...${NC}"
 echo ""
-echo "  Waypoint planı:"
-echo "    WP1   : Dış alan GPS (+5,+3)"
-echo "    WP2   : Tünele yaklaşma (+12,0) → GPS hâlâ iyi"
-echo "    WP3   : Tünel içi (+22,0) → GPS→SLAM geçişi"
-echo "    WP4   : Tünel derinliği (+28,0) → SLAM modu"
-echo "    WP5   : Tünelden çıkış (+5,-3) → SLAM→GPS geçişi"
-echo "    WP6   : Başlangıca dönüş (-3,-5) → GPS modu"
+echo "  Misyon planı (3 faz, 9 waypoint):"
+echo "    ── FAZ 1: outdoor_gps_1 (GPS modu) ──"
+echo "    WP1 : Güneye açık alan     → GPS navigasyon"
+echo "    WP2 : Duvar altı           → GPS navigasyon"
+echo "    WP3 : Duvar geçişi         → GPS navigasyon"
+echo "    WP4 : Tünel girişi         → GPS navigasyon"
+echo "    ── FAZ 2: tunnel_slam (SLAM modu) ──"
+echo "    WP5 : Tünel ortası         → GPS→SLAM geçişi"
+echo "    WP6 : Tünel çıkışı         → SLAM navigasyon"
+echo "    ── FAZ 3: outdoor_gps_2 (GPS modu) ──"
+echo "    WP7 : Güneye dönüş         → SLAM→GPS geçişi"
+echo "    WP8 : Batıya açık alan     → GPS navigasyon"
+echo "    WP9 : Başlangıca dönüş     → GPS navigasyon"
 echo ""
 
-docker exec -it "$CONTAINER" bash -c "
+# -i (stdin kalır ama tty gerektirmez) — stdout tamponlama sorununu önler
+docker exec -i "$CONTAINER" bash -c "
   source /opt/ros/humble/setup.bash
   source /home/ros/ws/install/setup.bash
 
@@ -197,14 +246,14 @@ docker exec -it "$CONTAINER" bash -c "
 echo ""
 echo -e "${BOLD}${CYAN}═══════════════════════ TEST SONUÇLARI ═══════════════════════${NC}"
 docker exec "$CONTAINER" bash -c "
-  grep -E '(✅|⚠️|SUCCEEDED|ABORTED|REJECTED|Total|Toplam|MISSION RESULTS|FAZ)' \
+  grep -E '(✅|⚠️|SUCCEEDED|ABORTED|REJECTED|Total|Toplam|MISSION RESULTS|FAZ|outdoor_gps|tunnel_slam)' \
     /tmp/waypoint_test.log 2>/dev/null || echo '  Log hazır değil'
 " 2>/dev/null || true
 
 echo ""
 echo -e "${BOLD}GPS Monitor mod geçişleri:${NC}"
 docker exec "$CONTAINER" bash -c "
-  grep 'MOD DEGISIKLIGI' /tmp/navigation.log 2>/dev/null || echo '  (gecis olmadi)'
+  grep -i 'mod.*gps\|mod.*slam\|MOD DEGISIKLIGI\|GPS_ON\|GPS_OFF\|Aktif mod' /tmp/waypoint_test.log 2>/dev/null | head -20 || echo '  (gecis olmadi)'
 " 2>/dev/null || true
 
 echo ""
@@ -214,3 +263,6 @@ echo "  Loglar:"
 echo "    Gazebo     : docker exec $CONTAINER cat /tmp/gazebo.log"
 echo "    Navigasyon : docker exec $CONTAINER cat /tmp/navigation.log"
 echo "    Waypoint   : docker exec $CONTAINER cat /tmp/waypoint_test.log"
+echo ""
+echo -e "  ${CYAN}Tekrar çalıştırma: ./run_hybrid_test.sh${NC}"
+echo -e "  ${CYAN}Restart atlayarak : ./run_hybrid_test.sh --no-restart${NC}"
