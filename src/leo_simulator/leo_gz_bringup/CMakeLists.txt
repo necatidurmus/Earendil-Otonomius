@@ -21,10 +21,6 @@ install(
     scripts/gps_monitor.py
     scripts/tunnel_gps_spoofer.py
     scripts/tf_mode_relay.py
-    scripts/waypoint_runner.py
-    scripts/mission_manager.py
-    scripts/test_gps_nav.py
-    scripts/test_hybrid_mission.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
