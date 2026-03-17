@@ -20,6 +20,7 @@ install(
     scripts/tunnel_gps_spoofer.py
     scripts/tf_mode_relay.py
     scripts/mission_manager.py
+    scripts/goal_pose_bridge.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
