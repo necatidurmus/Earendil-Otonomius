@@ -1,0 +1,37 @@
+# Solar Farm Mission Waypoints — GPS Navigation Test
+# mission_manager.py tarafından kullanılır.
+#
+# Datum: 39.925018°N, 32.836956°E (Ankara civarı)
+#
+# Dünya: clearpath_solar_farm.sdf
+# Test türü: GPS navigasyon (güneş paneli tarlası)
+#
+# Engel düzeni:
+#   Güneş paneli sıraları: merkez
+#   Ahır, çitler
+#   Hafif eğimli arazi
+#
+# Rota: Güneş paneli sıraları arasında navigasyon
+
+phases:
+  - name: solar_farm_gps
+    mode: GPS
+    waypoints:
+      - name: WP1_start
+        lat: 39.925018
+        lon: 32.836956
+      - name: WP2_solar_west
+        lat: 39.924950
+        lon: 32.836850
+      - name: WP3_solar_north
+        lat: 39.925100
+        lon: 32.836850
+      - name: WP4_barn_area
+        lat: 39.925100
+        lon: 32.837050
+      - name: WP5_solar_east
+        lat: 39.924950
+        lon: 32.837050
+      - name: WP6_return_home
+        lat: 39.925018
+        lon: 32.836956

@@ -159,15 +159,58 @@ tf_mode_relay.py → aktif kaynağı map→odom olarak yayınlar (50Hz)
 Bu proje eğitim amaçlıdır.
 
 
+## Test Ortamları (Dünyalar)
+
+Proje 7 farklı simülasyon dünyası içerir:
+
+| Dünya | Dosya | Test Türü | Açıklama |
+|-------|-------|-----------|----------|
+| **Obstacles** | `leo_obstacles.sdf` | Hibrit GPS+SLAM | Tünel, duvarlar, bumps (varsayılan) |
+| **Empty** | `leo_empty.sdf` | GPS | Boş dünya, temel test |
+| **Open Terrain** | `leo_open_terrain.sdf` | GPS | Tepeler, vadiler, farklı zeminler |
+| **Urban** | `leo_urban.sdf` | GPS | Binalar, yollar, kaldırım, park |
+| **Industrial** | `leo_industrial.sdf` | SLAM | Fabrika/depo, raflar, koridorlar |
+| **Sloped Terrain** | `leo_sloped_terrain.sdf` | GPS | 5°-30° eğimler, tırmanma testi |
+| **Earendil Env** | `leo_earendil_env.sdf` | Hibrit | Mesh tabanlı ortam (earendil_bot) |
+
+### Test Scriptleri
+
+Her世界için özel test scripti:
+
+```bash
+./run_hybrid_test.sh           # Obstacles dünyası (varsayılan)
+./run_terrain_test.sh          # Açık arazi dünyası
+./run_urban_test.sh            # Şehir dünyası
+./run_industrial_test.sh       # Endüstriyel tesis (SLAM)
+./run_slope_test.sh            # Eğimli arazi
+./run_earendil_test.sh         # Earendil environment
+```
+
+### Dünya Seçimi
+
+`sim_config.yaml`'dan veya komut satırından:
+
+```bash
+# Config dosyasından
+test:
+  world: open_terrain  # obstacles, empty, open_terrain, urban, industrial, sloped_terrain, earendil_env
+
+# Komut satırından
+./run_hybrid_test.sh --world empty
+```
+
 ## Proje Yapısı
 
 ```
 ├── Dockerfile                    # ROS 2 Humble Docker image
 ├── docker-compose.yml            # Container yapılandırması
 ├── sim_config.yaml               # Simülasyon parametreleri
-├── run_dual_ukf_test.sh          # v0.1 GPS-only test başlatıcı
-├── run_hybrid_test.sh            # v0.2 Hibrit GPS+SLAM test başlatıcı
-├── test_dual_ukf.py              # Dual-UKF doğrulama + 4 waypoint test
+├── run_hybrid_test.sh            # Hibrit GPS+SLAM test başlatıcı
+├── run_terrain_test.sh           # Açık arazi test başlatıcı
+├── run_urban_test.sh             # Şehir test başlatıcı
+├── run_industrial_test.sh        # Endüstriyel tesis test başlatıcı
+├── run_slope_test.sh             # Eğimli arazi test başlatıcı
+├── run_earendil_test.sh          # Earendil environment test başlatıcı
 ├── src/
 │   ├── teleop_web/               # Web teleoperasyon arayüzü
 │   ├── leo_common/               # Leo Rover URDF & açıklama
@@ -181,6 +224,11 @@ Bu proje eğitim amaçlıdır.
 │           │   └── spawn_robot.launch.py       # Robot spawning
 │           ├── config/
 │           │   ├── hybrid_waypoints.yaml       # 9 waypoint görev tanımı (3 faz)
+│           │   ├── open_terrain_waypoints.yaml # Açık arazi waypoint'ları
+│           │   ├── urban_waypoints.yaml        # Şehir waypoint'ları
+│           │   ├── industrial_waypoints.yaml   # Endüstriyel tesis waypoint'ları
+│           │   ├── sloped_terrain_waypoints.yaml # Eğimli arazi waypoint'ları
+│           │   ├── earendil_env_waypoints.yaml # Earendil environment waypoint'ları
 │           │   ├── nav2_params_hybrid.yaml     # Nav2 parametreleri
 │           │   ├── slam_toolbox_params.yaml    # SLAM Toolbox async config
 │           │   ├── ukf_local.yaml              # UKF Local: odom + IMU
@@ -194,5 +242,12 @@ Bu proje eğitim amaçlıdır.
 └── leo_gz_worlds/
     └── worlds/
         ├── leo_empty.sdf                       # Boş dünya
-        └── leo_obstacles.sdf                   # Tünel + engellli test dünyası ⭐
+        ├── leo_obstacles.sdf                   # Tünel + engelli test dünyası ⭐
+        ├── leo_open_terrain.sdf                # Açık arazi dünyası
+        ├── leo_urban.sdf                       # Şehir/urban dünyası
+        ├── leo_industrial.sdf                  # Endüstriyel tesis dünyası
+        ├── leo_sloped_terrain.sdf              # Eğimli arazi dünyası
+        ├── leo_earendil_env.sdf                # Earendil mesh dünyası
+        ├── meshes/earendil_environment/        # Earendil mesh dosyaları
+        └── skybox/                             # Gökyüzü dokuları
 ```

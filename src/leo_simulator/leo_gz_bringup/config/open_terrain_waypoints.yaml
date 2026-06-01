@@ -1,0 +1,41 @@
+# Open Terrain Mission Waypoints — GPS Navigation Test
+# mission_manager.py tarafından kullanılır.
+#
+# Datum: 39.925018°N, 32.836956°E (Ankara civarı)
+#
+# Dünya: leo_open_terrain.sdf
+# Test türü: GPS navigasyon (açık arazi)
+#
+# Engel düzeni:
+#   Tepeler: (0,25), (20,10), (-15,-10), (-18,-15)
+#   Vadiler: (5,0), (25,-5)
+#   Kayalar: (10,5), (-8,12), (15,-15)
+#   Ağaçlar: (-5,20), (25,20), (-20,-5)
+#
+# Rota: Dairesel parkur — tepeler etrafında, vadilerden geçiş
+
+phases:
+  - name: outdoor_gps_open
+    mode: GPS
+    waypoints:
+      - name: WP1_start
+        lat: 39.925018
+        lon: 32.836956
+      - name: WP2_north_hill
+        lat: 39.925150
+        lon: 32.836956
+      - name: WP3_east_hill
+        lat: 39.925100
+        lon: 32.837100
+      - name: WP4_south_east
+        lat: 39.924950
+        lon: 32.837100
+      - name: WP5_south_west
+        lat: 39.924950
+        lon: 32.836800
+      - name: WP6_west_hill
+        lat: 39.925100
+        lon: 32.836800
+      - name: WP7_return_home
+        lat: 39.925018
+        lon: 32.836956

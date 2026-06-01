@@ -73,11 +73,11 @@ robot:
 # Sistemin sırayla ayağa kalkması için bekleme süreleri.
 # Daha güçlü bilgisayarda küçültebilirsin.
 timing:
-  gazebo_startup:    25       # Gazebo'nun tamamen yüklenmesi için bekleme
+  gazebo_startup:    30       # Gazebo'nun tamamen yüklenmesi için bekleme
   ukf_global_start:   4      # UKF Local başladıktan sonra UKF Global gecikmesi
   navsat_start:        8     # UKF Global'den sonra NavSat Transform gecikmesi
   nav2_start:         40     # Nav2 başlatma gecikmesi (tam TF zinciri için)
-  nav_stack_wait:     50     # Test scriptinin nav stack'i beklemesi
+  nav_stack_wait:     60     # Test scriptinin nav stack'i beklemesi
   rviz_start:         42     # RViz gecikmesi (Nav2 hazır olduktan sonra)
 
 # ── GPS Monitor eşikleri ────────────────────────────────────────────
@@ -113,7 +113,21 @@ door:
 # ── Test ayarları ───────────────────────────────────────────────────
 test:
   timeout:         600     # Tüm testin maksimum süresi (saniye)
-  world:      obstacles    # 'obstacles' (tünel+kapı) veya 'empty'
+  world:      obstacles    # Aşağıdaki世界lerden biri:
+                    # 'obstacles'     — Tünel + engelli test dünyası (varsayılan)
+                    # 'empty'         — Boş dünya
+                    # 'open_terrain'  — Açık arazi (tepeler, vadiler)
+                    # 'urban'         — Şehir/urban ortamı
+                    # 'industrial'    — Endüstriyel tesis (iç mekan, SLAM)
+                    # 'sloped_terrain'— Eğimli arazi (tırmanma testi)
+                    # 'earendil_env'  — Earendil mesh ortamı (hibrit)
+                    # ── Clearpath dünyaları (Fortress'e uyarlanmış) ──
+                    # 'clearpath_warehouse'    — Depo ortamı (raflar, insanlar)
+                    # 'clearpath_office'       — Ofis kat planı (koridorlar, odalar)
+                    # 'clearpath_orchard'      — Bahçe ortamı (ağaç sıraları)
+                    # 'clearpath_pipeline'     — Boru hattı (nehir, köprü, mağara)
+                    # 'clearpath_solar_farm'   — Güneş paneli tarlası
+                    # 'clearpath_construction' — İnşaat alanı (enkavar, duvarlar)
   launch_rviz:    false    # RViz başlatılsın mı (run_hybrid_test.sh varsayılanı)
 # ── GPS Datum (dünya orijini) ─────────────────────────────────────────────
 # SDF dosyalarındaki spherical_coordinates ile eşleşmeli.

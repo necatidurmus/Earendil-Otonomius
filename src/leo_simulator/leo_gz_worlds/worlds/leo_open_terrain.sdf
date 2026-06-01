@@ -1,0 +1,408 @@
+<?xml version="1.0"?>
+<!--
+  Leo Rover — Open Terrain World
+  Designed for GPS navigation testing with varied terrain.
+
+  Layout (80×80m, robot starts at 0,0):
+    • Rolling hills      : Various sized domes for terrain traversal
+    • Shallow valleys     : Depressions in the terrain
+    • Different ground    : Mixed surfaces (sand, rock, grass patches)
+    • Sparse obstacles    : Rocks and trees for obstacle avoidance
+    • Open areas          : Clear paths for GPS waypoint navigation
+
+  GPS datum: Ankara, Turkey (same as leo_empty.sdf)
+-->
+<sdf version="1.8">
+  <world name="leo_open_terrain">
+
+    <!-- ── Physics ─────────────────────────────────────────────────── -->
+    <physics name="1ms" type="ignored">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+    </physics>
+
+    <!-- ── Plugins ──────────────────────────────────────────────────── -->
+    <plugin filename="ignition-gazebo-physics-system"
+            name="ignition::gazebo::systems::Physics"/>
+    <plugin filename="ignition-gazebo-sensors-system"
+            name="ignition::gazebo::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+    <plugin filename="ignition-gazebo-scene-broadcaster-system"
+            name="ignition::gazebo::systems::SceneBroadcaster"/>
+    <plugin filename="ignition-gazebo-user-commands-system"
+            name="ignition::gazebo::systems::UserCommands"/>
+    <plugin filename="gz-sim-imu-system"
+            name="gz::sim::systems::Imu"/>
+    <plugin filename="ignition-gazebo-navsat-system"
+            name="ignition::gazebo::systems::NavSat"/>
+
+    <!-- ── GPS datum: Ankara ─────────────────────────────────────────── -->
+    <spherical_coordinates>
+      <surface_model>EARTH_WGS84</surface_model>
+      <world_frame_orientation>ENU</world_frame_orientation>
+      <latitude_deg>39.925018</latitude_deg>
+      <longitude_deg>32.836956</longitude_deg>
+      <elevation>890</elevation>
+      <heading_deg>0</heading_deg>
+    </spherical_coordinates>
+
+    <!-- ── Lighting ─────────────────────────────────────────────────── -->
+    <light name="sun" type="directional">
+      <cast_shadows>true</cast_shadows>
+      <pose>0 0 10 0 0 0</pose>
+      <diffuse>0.8 0.8 0.8 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <attenuation>
+        <range>1000</range>
+        <constant>0.9</constant>
+        <linear>0.01</linear>
+        <quadratic>0.001</quadratic>
+      </attenuation>
+      <direction>-0.5 0.1 -0.9</direction>
+    </light>
+
+    <!-- ── Ground plane (grass/soil mix) ────────────────────────────── -->
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>200 200</size>
+            </plane>
+          </geometry>
+          <surface>
+            <friction>
+              <ode><mu>0.7</mu><mu2>0.7</mu2></ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>200 200</size>
+            </plane>
+          </geometry>
+          <material>
+            <!-- Green grass color -->
+            <ambient>0.3 0.5 0.2 1</ambient>
+            <diffuse>0.4 0.6 0.3 1</diffuse>
+            <specular>0.05 0.05 0.04 1</specular>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         ROLLING HILLS — Various sized terrain features
+         ════════════════════════════════════════════════════════════════ -->
+
+    <!-- Large hill — north area -->
+    <model name="hill_north">
+      <static>true</static>
+      <pose>0 25 -2.0 0 0 0</pose>
+      <link name="link">
+        <collision name="c">
+          <geometry><sphere><radius>3.0</radius></sphere></geometry>
+          <surface><friction><ode><mu>0.8</mu></ode></friction></surface>
+        </collision>
+        <visual name="v">
+          <geometry><sphere><radius>3.0</radius></sphere></geometry>
+          <material><ambient>0.55 0.45 0.3 1</ambient><diffuse>0.65 0.55 0.35 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Medium hill — east area -->
+    <model name="hill_east">
+      <static>true</static>
+      <pose>20 10 -1.8 0 0 0</pose>
+      <link name="link">
+        <collision name="c">
+          <geometry><sphere><radius>2.5</radius></sphere></geometry>
+          <surface><friction><ode><mu>0.8</mu></ode></friction></surface>
+        </collision>
+        <visual name="v">
+          <geometry><sphere><radius>2.5</radius></sphere></geometry>
+          <material><ambient>0.55 0.45 0.3 1</ambient><diffuse>0.65 0.55 0.35 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Small hill cluster — south-west -->
+    <model name="hill_sw_1">
+      <static>true</static>
+      <pose>-15 -10 -1.5 0 0 0</pose>
+      <link name="link">
+        <collision name="c">
+          <geometry><sphere><radius>2.0</radius></sphere></geometry>
+          <surface><friction><ode><mu>0.8</mu></ode></friction></surface>
+        </collision>
+        <visual name="v">
+          <geometry><sphere><radius>2.0</radius></sphere></geometry>
+          <material><ambient>0.55 0.45 0.3 1</ambient><diffuse>0.65 0.55 0.35 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="hill_sw_2">
+      <static>true</static>
+      <pose>-18 -15 -1.6 0 0 0</pose>
+      <link name="link">
+        <collision name="c">
+          <geometry><sphere><radius>2.2</radius></sphere></geometry>
+          <surface><friction><ode><mu>0.8</mu></ode></friction></surface>
+        </collision>
+        <visual name="v">
+          <geometry><sphere><radius>2.2</radius></sphere></geometry>
+          <material><ambient>0.55 0.45 0.3 1</ambient><diffuse>0.65 0.55 0.35 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         VALLEYS — Depressions in terrain (inverted hills)
+         ════════════════════════════════════════════════════════════════ -->
+
+    <!-- Valley — central area -->
+    <model name="valley_center">
+      <static>true</static>
+      <pose>5 0 1.5 0 0 0</pose>
+      <link name="link">
+        <collision name="c">
+          <geometry><sphere><radius>4.0</radius></sphere></geometry>
+          <surface><friction><ode><mu>0.6</mu></ode></friction></surface>
+        </collision>
+        <visual name="v">
+          <geometry><sphere><radius>4.0</radius></sphere></geometry>
+          <material><ambient>0.4 0.35 0.25 1</ambient><diffuse>0.5 0.45 0.3 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Small valley — east -->
+    <model name="valley_east">
+      <static>true</static>
+      <pose>25 -5 1.2 0 0 0</pose>
+      <link name="link">
+        <collision name="c">
+          <geometry><sphere><radius>3.0</radius></sphere></geometry>
+          <surface><friction><ode><mu>0.6</mu></ode></friction></surface>
+        </collision>
+        <visual name="v">
+          <geometry><sphere><radius>3.0</radius></sphere></geometry>
+          <material><ambient>0.4 0.35 0.25 1</ambient><diffuse>0.5 0.45 0.3 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         ROCKS — Scattered obstacles for navigation testing
+         ════════════════════════════════════════════════════════════════ -->
+
+    <model name="rock_01">
+      <static>true</static>
+      <pose>10 5 0.4 0 0 0</pose>
+      <link name="link">
+        <collision name="c">
+          <geometry><sphere><radius>0.8</radius></sphere></geometry>
+          <surface><friction><ode><mu>0.9</mu></ode></friction></surface>
+        </collision>
+        <visual name="v">
+          <geometry><sphere><radius>0.8</radius></sphere></geometry>
+          <material><ambient>0.4 0.4 0.4 1</ambient><diffuse>0.5 0.5 0.5 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="rock_02">
+      <static>true</static>
+      <pose>-8 12 0.5 0 0 0</pose>
+      <link name="link">
+        <collision name="c">
+          <geometry><sphere><radius>1.0</radius></sphere></geometry>
+          <surface><friction><ode><mu>0.9</mu></ode></friction></surface>
+        </collision>
+        <visual name="v">
+          <geometry><sphere><radius>1.0</radius></sphere></geometry>
+          <material><ambient>0.4 0.4 0.4 1</ambient><diffuse>0.5 0.5 0.5 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="rock_03">
+      <static>true</static>
+      <pose>15 -15 0.3 0 0 0</pose>
+      <link name="link">
+        <collision name="c">
+          <geometry><sphere><radius>0.6</radius></sphere></geometry>
+          <surface><friction><ode><mu>0.9</mu></ode></friction></surface>
+        </collision>
+        <visual name="v">
+          <geometry><sphere><radius>0.6</radius></sphere></geometry>
+          <material><ambient>0.4 0.4 0.4 1</ambient><diffuse>0.5 0.5 0.5 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         TREES — Visual landmarks and light obstacles
+         ════════════════════════════════════════════════════════════════ -->
+
+    <model name="tree_01">
+      <static>true</static>
+      <pose>-5 20 1.5 0 0 0</pose>
+      <link name="link">
+        <collision name="c">
+          <geometry><cylinder><radius>0.3</radius><length>3.0</length></cylinder></geometry>
+        </collision>
+        <visual name="v">
+          <geometry><cylinder><radius>0.3</radius><length>3.0</length></cylinder></geometry>
+          <material><ambient>0.3 0.2 0.1 1</ambient><diffuse>0.4 0.3 0.15 1</diffuse></material>
+        </visual>
+      </link>
+      <link name="canopy">
+        <pose>0 0 2.5 0 0 0</pose>
+        <collision name="c">
+          <geometry><sphere><radius>1.5</radius></sphere></geometry>
+        </collision>
+        <visual name="v">
+          <geometry><sphere><radius>1.5</radius></sphere></geometry>
+          <material><ambient>0.2 0.4 0.15 1</ambient><diffuse>0.3 0.5 0.2 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="tree_02">
+      <static>true</static>
+      <pose>25 20 1.5 0 0 0</pose>
+      <link name="link">
+        <collision name="c">
+          <geometry><cylinder><radius>0.3</radius><length>3.0</length></cylinder></geometry>
+        </collision>
+        <visual name="v">
+          <geometry><cylinder><radius>0.3</radius><length>3.0</length></cylinder></geometry>
+          <material><ambient>0.3 0.2 0.1 1</ambient><diffuse>0.4 0.3 0.15 1</diffuse></material>
+        </visual>
+      </link>
+      <link name="canopy">
+        <pose>0 0 2.5 0 0 0</pose>
+        <collision name="c">
+          <geometry><sphere><radius>1.5</radius></sphere></geometry>
+        </collision>
+        <visual name="v">
+          <geometry><sphere><radius>1.5</radius></sphere></geometry>
+          <material><ambient>0.2 0.4 0.15 1</ambient><diffuse>0.3 0.5 0.2 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="tree_03">
+      <static>true</static>
+      <pose>-20 -5 1.5 0 0 0</pose>
+      <link name="link">
+        <collision name="c">
+          <geometry><cylinder><radius>0.3</radius><length>3.0</length></cylinder></geometry>
+        </collision>
+        <visual name="v">
+          <geometry><cylinder><radius>0.3</radius><length>3.0</length></cylinder></geometry>
+          <material><ambient>0.3 0.2 0.1 1</ambient><diffuse>0.4 0.3 0.15 1</diffuse></material>
+        </visual>
+      </link>
+      <link name="canopy">
+        <pose>0 0 2.5 0 0 0</pose>
+        <collision name="c">
+          <geometry><sphere><radius>1.5</radius></sphere></geometry>
+        </collision>
+        <visual name="v">
+          <geometry><sphere><radius>1.5</radius></sphere></geometry>
+          <material><ambient>0.2 0.4 0.15 1</ambient><diffuse>0.3 0.5 0.2 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         SAND PATCHES — Different ground friction zones
+         ════════════════════════════════════════════════════════════════ -->
+
+    <model name="sand_patch_01">
+      <static>true</static>
+      <pose>10 -10 0.01 0 0 0</pose>
+      <link name="link">
+        <collision name="c">
+          <geometry><plane><normal>0 0 1</normal><size>8 8</size></plane></geometry>
+          <surface><friction><ode><mu>0.4</mu><mu2>0.4</mu2></ode></friction></surface>
+        </collision>
+        <visual name="v">
+          <geometry><plane><normal>0 0 1</normal><size>8 8</size></plane></geometry>
+          <material><ambient>0.8 0.7 0.5 1</ambient><diffuse>0.9 0.8 0.6 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="sand_patch_02">
+      <static>true</static>
+      <pose>-12 5 0.01 0 0 0</pose>
+      <link name="link">
+        <collision name="c">
+          <geometry><plane><normal>0 0 1</normal><size>6 6</size></plane></geometry>
+          <surface><friction><ode><mu>0.4</mu><mu2>0.4</mu2></ode></friction></surface>
+        </collision>
+        <visual name="v">
+          <geometry><plane><normal>0 0 1</normal><size>6 6</size></plane></geometry>
+          <material><ambient>0.8 0.7 0.5 1</ambient><diffuse>0.9 0.8 0.6 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         PATH MARKERS — Visual waypoints for testing
+         ════════════════════════════════════════════════════════════════ -->
+
+    <model name="marker_start">
+      <static>true</static>
+      <pose>0 0 0.1 0 0 0</pose>
+      <link name="link">
+        <collision name="c">
+          <geometry><cylinder><radius>0.2</radius><length>0.2</length></cylinder></geometry>
+        </collision>
+        <visual name="v">
+          <geometry><cylinder><radius>0.2</radius><length>0.2</length></cylinder></geometry>
+          <material><ambient>0.2 0.8 0.2 1</ambient><diffuse>0.3 0.9 0.3 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="marker_north">
+      <static>true</static>
+      <pose>0 30 0.1 0 0 0</pose>
+      <link name="link">
+        <collision name="c">
+          <geometry><cylinder><radius>0.2</radius><length>0.2</length></cylinder></geometry>
+        </collision>
+        <visual name="v">
+          <geometry><cylinder><radius>0.2</radius><length>0.2</length></cylinder></geometry>
+          <material><ambient>0.2 0.2 0.8 1</ambient><diffuse>0.3 0.3 0.9 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="marker_east">
+      <static>true</static>
+      <pose>30 0 0.1 0 0 0</pose>
+      <link name="link">
+        <collision name="c">
+          <geometry><cylinder><radius>0.2</radius><length>0.2</length></cylinder></geometry>
+        </collision>
+        <visual name="v">
+          <geometry><cylinder><radius>0.2</radius><length>0.2</length></cylinder></geometry>
+          <material><ambient>0.8 0.2 0.2 1</ambient><diffuse>0.9 0.3 0.3 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+  </world>
+</sdf>

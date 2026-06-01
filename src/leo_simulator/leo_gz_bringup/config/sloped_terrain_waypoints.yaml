@@ -1,0 +1,45 @@
+# Sloped Terrain Mission Waypoints — Terrain Traversal Test
+# mission_manager.py tarafından kullanılır.
+#
+# Datum: 39.925018°N, 32.836956°E (Ankara civarı)
+#
+# Dünya: leo_sloped_terrain.sdf
+# Test türü: GPS navigasyon (eğimli arazi traversi)
+#
+# Engel düzeni:
+#   5° eğim: Kuzey (0,20)
+#   10° eğim: Doğu (20,0)
+#   15° eğim: Güney (0,-20)
+#   20° eğim: Batı (-20,0)
+#   25° eğim: NE (25,25)
+#   30° eğim: SW (-25,-25)
+#   Çakıl yaması: (0,10)
+#   Düz kaya: (0,-10)
+#
+# Rota: Eğimlerden geçiş testi
+
+phases:
+  - name: slope_test_gps
+    mode: GPS
+    waypoints:
+      - name: WP1_start
+        lat: 39.925018
+        lon: 32.836956
+      - name: WP2_gentle_slope
+        lat: 39.925100
+        lon: 32.836956
+      - name: WP3_moderate_slope
+        lat: 39.925018
+        lon: 32.837100
+      - name: WP4_steep_slope
+        lat: 39.924950
+        lon: 32.836956
+      - name: WP5_very_steep
+        lat: 39.924950
+        lon: 32.836800
+      - name: WP6_recovery_flat
+        lat: 39.925018
+        lon: 32.836800
+      - name: WP7_return_home
+        lat: 39.925018
+        lon: 32.836956

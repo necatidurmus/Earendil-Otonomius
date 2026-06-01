@@ -1,0 +1,36 @@
+# Orchard Mission Waypoints — GPS Navigation Test
+# mission_manager.py tarafından kullanılır.
+#
+# Datum: 39.925018°N, 32.836956°E (Ankara civarı)
+#
+# Dünya: clearpath_orchard.sdf
+# Test türü: GPS navigasyon (bahçe ortamı)
+#
+# Engel düzeni:
+#   Ağaç sıraları: merkez (-10, -10) offset
+#   Düz arazi
+#
+# Rota: Ağaç sıraları arasında navigasyon
+
+phases:
+  - name: orchard_gps
+    mode: GPS
+    waypoints:
+      - name: WP1_start
+        lat: 39.925018
+        lon: 32.836956
+      - name: WP2_orchard_west
+        lat: 39.924950
+        lon: 32.836850
+      - name: WP3_orchard_north
+        lat: 39.925100
+        lon: 32.836850
+      - name: WP4_orchard_east
+        lat: 39.925100
+        lon: 32.837050
+      - name: WP5_orchard_south
+        lat: 39.924950
+        lon: 32.837050
+      - name: WP6_return_home
+        lat: 39.925018
+        lon: 32.836956

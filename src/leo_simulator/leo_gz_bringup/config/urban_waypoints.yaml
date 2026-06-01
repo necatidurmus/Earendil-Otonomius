@@ -1,0 +1,51 @@
+# Urban/City Mission Waypoints — GPS Navigation Test
+# mission_manager.py tarafından kullanılır.
+#
+# Datum: 39.925018°N, 32.836956°E (Ankara civarı)
+#
+# Dünya: leo_urban.sdf
+# Test türü: GPS navigasyon (şehir ortamı)
+#
+# Engel düzeni:
+#   Binalar: NW, NE, SW, SE köşelerinde
+#   Yollar: x=0 (N-S), y=0 (E-W) ana yollar
+#   Kaldırım: x=±10, y=±10
+#   Park: Merkez (0,0) - 12x12m
+#   Otopark: (0,-25)
+#
+# Rota: Şehir blokları etrafında dairesel tur
+
+phases:
+  - name: urban_gps
+    mode: GPS
+    waypoints:
+      - name: WP1_start
+        lat: 39.925018
+        lon: 32.836956
+      - name: WP2_north_road
+        lat: 39.925100
+        lon: 32.836956
+      - name: WP3_ne_corner
+        lat: 39.925100
+        lon: 32.837100
+      - name: WP4_east_road
+        lat: 39.925018
+        lon: 32.837100
+      - name: WP5_se_corner
+        lat: 39.924950
+        lon: 32.837100
+      - name: WP6_south_road
+        lat: 39.924950
+        lon: 32.836956
+      - name: WP7_sw_corner
+        lat: 39.924950
+        lon: 32.836800
+      - name: WP8_west_road
+        lat: 39.925018
+        lon: 32.836800
+      - name: WP9_nw_corner
+        lat: 39.925100
+        lon: 32.836800
+      - name: WP10_return_home
+        lat: 39.925018
+        lon: 32.836956
