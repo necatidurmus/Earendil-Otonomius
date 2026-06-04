@@ -107,8 +107,8 @@ local_costmap:
       plugins: ["voxel_layer", "inflation_layer"]
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 2.5
-        inflation_radius: 0.55           # Duvardan uzak tutmak için artırıldı
+        cost_scaling_factor: 2.0         # Düşük = daha geniş maliyet alanı = daha güvenli
+        inflation_radius: 0.85           # 0.55→0.85: engellere çarpmayı önler
       voxel_layer:
         plugin: "nav2_costmap_2d::VoxelLayer"
         enabled: True
@@ -165,8 +165,8 @@ global_costmap:
           obstacle_min_range: 0.10
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 2.5
-        inflation_radius: 0.55           # Duvardan uzak tutmak için artırıldı
+        cost_scaling_factor: 2.0         # Düşük = daha geniş maliyet alanı = daha güvenli
+        inflation_radius: 0.85           # 0.55→0.85: engellere çarpmayı önler
       always_send_full_costmap: True
 
 planner_server:

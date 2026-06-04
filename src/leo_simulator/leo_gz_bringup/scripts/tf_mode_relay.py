@@ -154,6 +154,8 @@ class TFModeRelay(Node):
 
         # Publish map→map_slam at 50 Hz
         self.create_timer(0.02, self._relay_tf)
+        
+        self._latched_gps_correction = _identity_transform()
 
         self.get_logger().info('TF Mode Relay v0.5 baslatildi')
         self.get_logger().info('  TF zinciri: map → map_slam → odom → base_footprint')
@@ -210,9 +212,12 @@ class TFModeRelay(Node):
 
     def _get_source_tf(self, mode):
         if mode == 'GPS':
-            return self._get_gps_correction()
+            correction = self._get_gps_correction()
+            if correction is not None:
+                self._latched_gps_correction = self._copy_transform(correction)
+            return correction
         else:
-            return _identity_transform()
+            return self._latched_gps_correction
 
     def _relay_tf(self):
         if self._transition_active:

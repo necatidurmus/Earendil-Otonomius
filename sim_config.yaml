@@ -87,10 +87,10 @@ timing:
 gps_monitor:
   gps_to_slam_threshold:  0.3    # Bu değerin altına düşerse → SLAM
   slam_to_gps_threshold:  0.45   # Bu değerin üstüne çıkarsa → GPS (sim GPS status=0 → quality=0.50)
-  window_size:            10     # Kaç ölçümün ortalaması alınsın
-  hysteresis_secs:        3.0    # Mod geçişleri arası minimum süre (chatter önleme)
+  window_size:            15     # Kaç ölçümün ortalaması alınsın (geliştirildi: 10 -> 15)
+  hysteresis_secs:        5.0    # Mod geçişleri arası minimum süre (geliştirildi: 3.0 -> 5.0)
   gps_timeout_secs:       3.0    # GPS mesajı bu süre gelmezse kalite=0 say
-  confirmation_count:     3      # Mod geçişi için ardışık onay sayısı
+  confirmation_count:     5      # Mod geçişi için ardışık onay sayısı (geliştirildi: 3 -> 5)
   verbose:               true    # Log çıktısı açık mı
 
 # ── Tünel GPS spoof bölgesi ─────────────────────────────────────────

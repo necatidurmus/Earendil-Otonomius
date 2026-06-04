@@ -63,6 +63,7 @@ while [[ $# -gt 0 ]]; do
     --timeout)      TIMEOUT="$2"; shift 2 ;;
     --rviz)         LAUNCH_RVIZ=true; shift ;;
     --no-restart)   SKIP_RESTART=true; shift ;;
+    --no-mission)   SKIP_MISSION=true; shift ;;
     -h|--help)
       grep '^#' "$0" | sed 's/^# \?//'
       exit 0 ;;
@@ -285,7 +286,10 @@ echo "    WP2-5: Dünya içi navigasyon noktaları"
 echo "    WP6: Başlangıca dönüş"
 echo ""
 
-docker exec -i "$CONTAINER" bash -c "
+if [[ "${SKIP_MISSION:-false}" == "true" ]]; then
+  echo -e "${YELLOW}⚠ Görev atlandı (--no-mission). Kontrol MATLAB GUI'sine devredildi.${NC}"
+else
+  docker exec -i "$CONTAINER" bash -c "
   source /opt/ros/humble/setup.bash
   source /home/ros/ws/install/setup.bash
 
@@ -293,6 +297,7 @@ docker exec -i "$CONTAINER" bash -c "
     --mission /home/ros/ws/install/leo_gz_bringup/share/leo_gz_bringup/config/$WAYPOINTS \
     2>&1 | tee /tmp/waypoint_test.log
 " || true
+fi
 
 # ── Sonuç özeti ───────────────────────────────────────────────────────────
 echo ""

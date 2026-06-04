@@ -35,15 +35,16 @@ class TunnelGPSSpoofer(Node):
         super().__init__('tunnel_gps_spoofer')
 
         # ── Parametreler ─────────────────────────────────────────────────────
-        self.declare_parameter('tunnel_x_min', 19.5)
-        self.declare_parameter('tunnel_x_max', 30.5)
-        self.declare_parameter('tunnel_y_max', 1.35)
+        self.declare_parameter('tunnel_x_min', 20.0)
+        self.declare_parameter('tunnel_x_max', 30.0)
+        self.declare_parameter('tunnel_y_max', 1.85)
         self.declare_parameter('door_x_min',   33.5)
         self.declare_parameter('door_x_max',   36.5)
         self.declare_parameter('door_y_max',   1.0)
         self.declare_parameter('verbose',      True)
         self.declare_parameter('base_frame',   'base_footprint')
-        self.declare_parameter('map_frame',    'map')
+        # odom frame kullan: map frame GPS/SLAM gecisinde kayar, odom kaymiyor
+        self.declare_parameter('map_frame',    'odom')
         self.declare_parameter('control_topic', '/gps_spoofer/control')
         self.declare_parameter('state_topic',   '/gps_spoofer/state')
 
@@ -66,6 +67,8 @@ class TunnelGPSSpoofer(Node):
         self.override_mode = 'AUTO'
         self.last_effective_mode = 'NORMAL'
         self.tf_available = False
+        # Tünel latch: tünele bir kez girince çıkana kadar GPS kapalı kalır
+        self.tunnel_latched = False
 
         # ── TF listener (odom yerine — drift yok) ────────────────────────────
         self.tf_buffer   = tf2_ros.Buffer()
@@ -173,10 +176,46 @@ class TunnelGPSSpoofer(Node):
     # ── Bölge belirleme ──────────────────────────────────────────────────────
     def _get_zone(self, x: float, y: float) -> str:
         ay = abs(y)
-        if self.t_xmin <= x <= self.t_xmax and ay <= self.t_ymax:
+
+        # ── TÜNEL LATCH: Bir kez tünele girince tamamen çıkana kadar GPS kapalı ──
+        # Giriş: x >= t_xmin ve |y| <= t_ymax
+        # Çıkış latchi: x < 19.0 (geri döndü) VEYA x > 31.0 (karşıdan çıktı)
+        if not self.tunnel_latched:
+            # Tünele yeni mi girdi?
+            in_tunnel_now = (self.t_xmin <= x <= self.t_xmax) and (ay <= self.t_ymax)
+            if in_tunnel_now:
+                self.tunnel_latched = True
+                self.get_logger().warn(
+                    f'TUNEL LATCH AKTIF: x={x:.1f} y={y:.1f} — GPS tünelden çıkana kadar kapalı')
+        else:
+            # Latch açık: tamamen dışarı çıktı mı?
+            exited = (x < 19.0) or (x > 31.0)
+            if exited:
+                self.tunnel_latched = False
+                self.get_logger().warn(
+                    f'TUNEL LATCH SIFIRLA: x={x:.1f} y={y:.1f} — GPS normale döndü')
+
+        if self.tunnel_latched:
             return 'TUNNEL'
-        if self.d_xmin <= x <= self.d_xmax and ay <= self.d_ymax:
+
+        # Normal histerezis (latch aktif değilse)
+        if self.last_zone == 'TUNNEL':
+            in_tunnel = (self.t_xmin - 1.0) <= x <= (self.t_xmax + 1.0) and ay <= (self.t_ymax + 0.3)
+        else:
+            in_tunnel = self.t_xmin <= x <= self.t_xmax and ay <= self.t_ymax
+
+        if in_tunnel:
+            return 'TUNNEL'
+
+        # Histerezis (Kapı)
+        if self.last_zone == 'DOOR':
+            in_door = (self.d_xmin - 1.0) <= x <= (self.d_xmax + 1.0) and ay <= (self.d_ymax + 0.5)
+        else:
+            in_door = self.d_xmin <= x <= self.d_xmax and ay <= self.d_ymax
+
+        if in_door:
             return 'DOOR'
+
         return 'NORMAL'
 
     # ── Mesaj spoofing ───────────────────────────────────────────────────────

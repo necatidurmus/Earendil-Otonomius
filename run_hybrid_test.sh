@@ -53,6 +53,7 @@ while [[ $# -gt 0 ]]; do
     --timeout)      TIMEOUT="$2"; shift 2 ;;
     --rviz)         LAUNCH_RVIZ=true; shift ;;
     --no-restart)   SKIP_RESTART=true; shift ;;
+    --no-mission)   SKIP_MISSION=true; shift ;;
     -h|--help)
       grep '^#' "$0" | sed 's/^# \?//'
       exit 0 ;;
@@ -64,9 +65,15 @@ done
 if [[ "$WORLD" == "empty" ]]; then
   WORLD_SDF="leo_empty.sdf"
   WORLD_NAME="leo_empty"
-else
+elif [[ "$WORLD" == "obstacles" ]]; then
   WORLD_SDF="leo_obstacles.sdf"
   WORLD_NAME="leo_obstacles"
+else
+  WORLD_SDF="$WORLD"
+  if [[ "$WORLD_SDF" != *.sdf ]]; then
+    WORLD_SDF="${WORLD_SDF}.sdf"
+  fi
+  WORLD_NAME="${WORLD_SDF%.sdf}"
 fi
 
 # ── Renk kodları ──────────────────────────────────────────────────────────
@@ -233,7 +240,10 @@ echo "    WP9 : Başlangıca dönüş     → GPS navigasyon"
 echo ""
 
 # -i (stdin kalır ama tty gerektirmez) — stdout tamponlama sorununu önler
-docker exec -i "$CONTAINER" bash -c "
+if [[ "${SKIP_MISSION:-false}" == "true" ]]; then
+  echo -e "${YELLOW}⚠ Görev atlandı (--no-mission). Kontrol MATLAB GUI'sine devredildi.${NC}"
+else
+  docker exec -i "$CONTAINER" bash -c "
   source /opt/ros/humble/setup.bash
   source /home/ros/ws/install/setup.bash
 
@@ -241,6 +251,7 @@ docker exec -i "$CONTAINER" bash -c "
     --mission /home/ros/ws/install/leo_gz_bringup/share/leo_gz_bringup/config/hybrid_waypoints.yaml \
     2>&1 | tee /tmp/waypoint_test.log
 " || true
+fi
 
 # ── Sonuç özeti ───────────────────────────────────────────────────────────
 echo ""
