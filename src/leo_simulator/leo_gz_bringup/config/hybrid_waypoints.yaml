@@ -1,0 +1,64 @@
+# Hybrid Mission Waypoints — Phase-based GPS+SLAM navigation (v0.4)
+# mission_manager.py tarafından kullanılır.
+#
+# Datum: 39.925018°N, 32.836956°E (Ankara civarı)
+# NOT: yaw_offset=π/2 nedeniyle GPS→map dönüşümü döndürülmüş;
+#      koordinatlar /fromLL servisi ile doğrulanmıştır.
+#
+# Engel düzeni:
+#   box_01: (6,4)    box_03: (10,-3)   box_05: (3,-8)
+#   box_14: (14,-8)  wall_east: x=17, y=[-8,+8]
+#   Tünel : x=[20,30], y=±1.5 (duvarlar), giriş x=20
+#
+# Tünel bölgesi : x ∈ [19.5, 30.5], |y| < 1.35  → STATUS_NO_FIX
+# Kapı bölgesi  : x ∈ [33.5, 36.5], |y| < 1.0   → zayıf GPS
+#
+# Rota:
+#   1) Güneye in (box'lardan kaç) → 2) wall_east altından geç (y<-8) →
+#   3) wall'u geç (x>17) → 4) tünel girişine yaklaş →
+#   5) tünelden geç → 6) güneye dönüş → 7) batıya dön → 8) eve dön
+#
+# Koordinat sistemi:
+#   GPS fazları  → lat/lon (/fromLL ile map XY'ye çevrilir)
+#   SLAM fazları → x/y (doğrudan map frame lokal koordinatlar)
+
+phases:
+  - name: outdoor_gps_1
+    mode: GPS
+    waypoints:
+      - name: WP1_south_clear
+        lat: 39.924950          # → map(+6, -5)  güneye, engellerden temiz
+        lon: 32.836977
+      - name: WP2_below_wall
+        lat: 39.924888          # → map(+10, -10.5)  wall altı, box'lar arası
+        lon: 32.836976
+      - name: WP3_past_wall
+        lat: 39.924845          # → map(+18, -10.5)  wall_east geçildi
+        lon: 32.837052
+      - name: WP4_tunnel_entrance
+        lat: 39.924916          # → map(+19, 0)  tünel girişi
+        lon: 32.837134
+
+  - name: tunnel_slam
+    mode: SLAM
+    heading_deg: 0              # Sabit yön: doğu (tünel ekseni). Robot yaw'ı yerine bu kullanılır.
+    waypoints:
+      - name: WP5_tunnel_middle
+        forward: 6.0            # 6m ileri (heading_deg yönünde)
+        lateral: 0.0
+      - name: WP6_tunnel_exit
+        forward: 12.0           # 12m ileri — tünel çıkışı
+        lateral: 0.0
+
+  - name: outdoor_gps_2
+    mode: GPS
+    waypoints:
+      - name: WP7_south_return
+        lat: 39.924845          # → map(+18, -10.5)  güneye, wall altı
+        lon: 32.837052
+      - name: WP8_west_clear
+        lat: 39.924888          # → map(+10, -10.5)  batıya, box_14 altı
+        lon: 32.836976
+      - name: WP9_return_home
+        lat: 39.925018          # → map(0, 0)  başlangıca dön
+        lon: 32.836956

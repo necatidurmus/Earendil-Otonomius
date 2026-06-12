@@ -1,0 +1,63 @@
+# SLAM Toolbox — Online Async Mode
+# Hybrid navigasyon için: GPS kaybında LiDAR ile lokalizasyon
+# slam_toolbox paketi: ros-humble-slam-toolbox
+
+slam_toolbox:
+  ros__parameters:
+    # ── Çalışma modu ─────────────────────────────────────────────────
+    # online_async: gerçek zamanlı haritalama (simülasyon için ideal)
+    solver_plugin: solver_plugins::CeresSolver
+    ceres_linear_solver: SPARSE_NORMAL_CHOLESKY
+    ceres_preconditioner: SCHUR_JACOBI
+    ceres_trust_strategy: LEVENBERG_MARQUARDT
+    ceres_dogleg_type: TRADITIONAL_DOGLEG
+    ceres_loss_function: None
+
+    # ── Frame ayarları ───────────────────────────────────────────────
+    odom_frame: odom
+    map_frame: map_slam            # Hybrid mode: separate frame (tf_mode_relay selects)
+    base_frame: base_footprint
+    scan_topic: /scan
+    use_map_saver: false
+
+    # ── Zaman senkronizasyonu ────────────────────────────────────────
+    # Not: launch dosyası use_sim_time'ı üstüne yazar; bu değer
+    # sadece doğrudan --params-file ile çaıştırılığında geçerlidir.
+    use_sim_time: false                 # Gerçek robot varsayılanı; launch override eder
+
+    # ── Haritalama parametreleri ─────────────────────────────────────
+    mode: mapping                       # 'mapping' veya 'localization'
+    debug_logging: false
+    throttle_scans: 1
+    transform_publish_period: 0.02      # 50Hz TF yayını
+    map_update_interval: 1.0            # 1s — hızlı harita oluşturma (cold start iyileştirmesi)
+    resolution: 0.05                    # 5cm çözünürlük
+    max_laser_range: 12.0               # LiDAR menzili (Leo Rover ~12m)
+    minimum_time_interval: 0.3          # 300ms — daha sık scan işleme
+    transform_timeout: 0.2
+    tf_buffer_duration: 30.0
+
+    # ── Döngü kapama (loop closure) ───────────────────────────────────
+    # Tünel içinden çıkarken konumu düzeltir
+    do_loop_closing: true
+    loop_search_space_dimension: 8.0
+    loop_match_minimum_response_coarse: 0.35
+    loop_match_maximum_variance_coarse: 3.0
+    loop_match_minimum_response_fine: 0.45
+
+    # ── Tarama eşleştirme ────────────────────────────────────────────
+    minimum_travel_distance: 0.15       # 15cm — tünel girişinde daha sık tarama
+    minimum_travel_heading: 0.2         # ~11° — dar dönüşlerde scan kaçırma
+    scan_buffer_size: 15                # Daha geniş scan geçmişi → cold start desteği
+    scan_buffer_maximum_scan_distance: 10.0
+    link_match_minimum_response_fine: 0.1
+    link_scan_maximum_distance: 1.5
+
+    # ── Korelasyon parametreleri ──────────────────────────────────────
+    correlation_search_space_dimension: 0.5
+    correlation_search_space_resolution: 0.01
+    correlation_search_space_smear_deviation: 0.1
+
+    # ── Serileştirme (harita kayıt/yükleme) ──────────────────────────
+    map_file_name: /tmp/slam_map
+    map_start_at_dock: false

@@ -1,0 +1,36 @@
+# Construction Mission Waypoints — GPS Navigation Test
+# mission_manager.py tarafından kullanılır.
+#
+# Datum: 39.925018°N, 32.836956°E (Ankara civarı)
+#
+# Dünya: clearpath_construction.sdf
+# Test türü: GPS navigasyon (inşaat ortamı)
+#
+# Engel düzeni:
+#   İnşaat alanı: merkez
+#   Duvarlar, enkavar, inşaat malzemeleri
+#
+# Rota: İnşaat alanında navigasyon
+
+phases:
+  - name: construction_gps
+    mode: GPS
+    waypoints:
+      - name: WP1_start
+        lat: 39.925018
+        lon: 32.836956
+      - name: WP2_construction_entrance
+        lat: 39.925050
+        lon: 32.836980
+      - name: WP3_debris_area
+        lat: 39.925080
+        lon: 32.837000
+      - name: WP4_wall_section
+        lat: 39.925100
+        lon: 32.837050
+      - name: WP5_loading_zone
+        lat: 39.925060
+        lon: 32.837080
+      - name: WP6_return_home
+        lat: 39.925018
+        lon: 32.836956

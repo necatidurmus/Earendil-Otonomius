@@ -1,0 +1,17 @@
+# NavSat Transform Node parameters
+# Converts GPS (NavSatFix) to local odometry (/odometry/gps)
+# Provides /fromLL service for lat/lon -> map XY conversion
+
+navsat_transform_node:
+  ros__parameters:
+    use_sim_time: true
+    frequency: 10.0
+    delay: 0.0
+    magnetic_declination_radians: 0.0   # Simulation: no magnetic declination
+    yaw_offset: 1.5708                  # π/2: Gazebo ENU X=East → ROS yaw=0 North dönüşümü
+    zero_altitude: true
+    broadcast_utm_transform: false
+    publish_filtered_gps: true
+    wait_for_datum: true
+    datum: [39.925018, 32.836956, 890.0]   # Exact match with leo_obstacles.sdf spherical_coordinates
+    use_odometry_yaw: false                 # false: IMU yaw kullan (robot hareket etmeden doğru yaw)

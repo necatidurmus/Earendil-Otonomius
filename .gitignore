@@ -1,0 +1,50 @@
+# Build artifacts
+build/
+install/
+log/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+
+# ROS 2
+*.bag
+*.db3
+
+# Docker
+.docker/
+
+# AI config
+.gemini/
+.claude/
+
+# Temporary
+*.log
+/tmp/
+
+# Office / docs
+*.docx
+*.xlsx
+*.pptx
+
+# Accidental PostScript outputs
+*.ps
+*.eps
+rclpy
+sys
+
+# Thesis evidence outputs (large test artifacts)
+thesis_evidence/
+
+# Test logs (auto-saved by save_logs.sh)
+test_logs/

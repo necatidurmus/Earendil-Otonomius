@@ -1,0 +1,52 @@
+# Earendil Environment Mission Waypoints — Hybrid GPS+SLAM Test
+# mission_manager.py tarafından kullanılır.
+#
+# Datum: 39.925018°N, 32.836956°E (Ankara civarı)
+#
+# Dünya: leo_earendil_env.sdf
+# Test türü: Hibrit GPS+SLAM (mesh tabanlı ortam)
+#
+# Orijinal kaynak: https://github.com/xlanthorbp/earendil_bot.git
+#
+# Yerleşim özellikleri:
+#   - Engebeli arazi kraterlerle
+#   - Antenna yapısı
+#   - Lava tüneli
+#   - ArUco marker'lar (CV navigasyon için)
+#
+# Rota: Base çıkışı → Hedef seçimi → Tünel geçişi → Eve dönüş
+
+phases:
+  - name: earendil_gps_1
+    mode: GPS
+    waypoints:
+      - name: WP1_start
+        lat: 39.925018
+        lon: 32.836956
+      - name: WP2_antenna
+        lat: 39.925185
+        lon: 32.837249
+      - name: WP3_crater_approach
+        lat: 39.924915
+        lon: 32.836722
+
+  - name: earendil_slam_tunnel
+    mode: SLAM
+    heading_deg: 45
+    waypoints:
+      - name: WP4_lavatube_entry
+        forward: 5.0
+        lateral: 0.0
+      - name: WP5_lavatube_exit
+        forward: 15.0
+        lateral: 0.0
+
+  - name: earendil_gps_2
+    mode: GPS
+    waypoints:
+      - name: WP6_return_path
+        lat: 39.925112
+        lon: 32.836628
+      - name: WP7_return_home
+        lat: 39.925018
+        lon: 32.836956

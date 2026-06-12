@@ -1,0 +1,40 @@
+# Industrial Facility Mission Waypoints — SLAM Navigation Test
+# mission_manager.py tarafından kullanılır.
+#
+# Datum: 39.925018°N, 32.836956°E (Ankara civarı)
+#
+# Dünya: leo_industrial.sdf
+# Test türü: SLAM navigasyon (iç mekan, GPS-denied)
+#
+# Engel düzeni:
+#   Depo duvarları: x=±25, y=±25
+#   Raf sıraları: x=-15, -5, 5, 15 (her biri y=-15,-5,5,15)
+#   Ofis alanı: NE köşesi (x=17-23, y=19-25)
+#   Yükleme rampası: Batı (x=-22)
+#   Forklift: (10,0)
+#
+# Rota: Raflar arası koridor navigasyonu
+
+phases:
+  - name: indoor_slam
+    mode: SLAM
+    heading_deg: 0
+    waypoints:
+      - name: WP1_start
+        forward: 0.0
+        lateral: 0.0
+      - name: WP2_rack_corridor_1
+        forward: 10.0
+        lateral: 5.0
+      - name: WP3_rack_corridor_2
+        forward: 10.0
+        lateral: -5.0
+      - name: WP4_loading_dock
+        forward: -15.0
+        lateral: 0.0
+      - name: WP5_office_area
+        forward: 15.0
+        lateral: 15.0
+      - name: WP6_return_home
+        forward: 0.0
+        lateral: 0.0
