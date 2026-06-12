@@ -22,6 +22,10 @@ Kullanım:
   ya da launch dosyasıyla otomatik başlatılır
 """
 
+import time
+import math
+from collections import deque
+
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import NavSatFix
@@ -29,8 +33,6 @@ from nav_msgs.msg import Odometry
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from std_msgs.msg import String, Float32
 from robot_localization.srv import SetPose
-from collections import deque
-import math
 
 
 class GPSMonitor(Node):
@@ -70,9 +72,7 @@ class GPSMonitor(Node):
 
         self.declare_parameter('startup_grace_secs', 10.0)
         self._startup_grace_secs = self.get_parameter('startup_grace_secs').value
-        import time
         self._startup_wall_time = time.time()
-        self.get_logger().info(f'Startup wall time: {self._startup_wall_time}')
         self._ukf_reset_retry_timer = None
         self._ukf_reset_retries = 0
 
@@ -115,10 +115,10 @@ class GPSMonitor(Node):
 
     def _try_ukf_reset(self):
         if self.latest_gps_odom is None:
-            if self._ukf_reset_retries < 10:
+            if self._ukf_reset_retries < 5:
                 self._ukf_reset_retries += 1
                 self.get_logger().info(
-                    f'UKF reset: /odometry/gps bekleniyor (deneme {self._ukf_reset_retries}/10)')
+                    f'UKF reset: /odometry/gps bekleniyor (deneme {self._ukf_reset_retries}/5)')
                 self._ukf_reset_retry_timer = self.create_timer(1.0, self._ukf_reset_retry_cb)
                 return
             self.get_logger().warn('UKF reset: /odometry/gps verisi yok, vazgeçiliyor')
@@ -126,10 +126,10 @@ class GPSMonitor(Node):
 
         # Servis hazır mı kontrol et
         if not self.set_pose_client.service_is_ready():
-            if self._ukf_reset_retries < 10:
+            if self._ukf_reset_retries < 5:
                 self._ukf_reset_retries += 1
                 self.get_logger().info(
-                    f'UKF reset: set_pose servisi hazır değil (deneme {self._ukf_reset_retries}/10)')
+                    f'UKF reset: set_pose servisi hazır değil (deneme {self._ukf_reset_retries}/5)')
                 self._ukf_reset_retry_timer = self.create_timer(1.0, self._ukf_reset_retry_cb)
                 return
             self.get_logger().warn('UKF reset: set_pose servisi hazır değil, vazgeçiliyor')
@@ -166,13 +166,13 @@ class GPSMonitor(Node):
             result = future.result()
             self.get_logger().info('UKF Global sıfırlama başarılı')
         except Exception as e:
-            if self._ukf_reset_retries < 10:
+            if self._ukf_reset_retries < 5:
                 self._ukf_reset_retries += 1
                 self.get_logger().info(
-                    f'UKF reset: servis hatası, tekrar deneniyor ({self._ukf_reset_retries}/10): {e}')
+                    f'UKF reset: servis hatası, tekrar deneniyor ({self._ukf_reset_retries}/5): {e}')
                 self._ukf_reset_retry_timer = self.create_timer(2.0, self._ukf_reset_retry_cb)
             else:
-                self.get_logger().warn(f'UKF Global sıfırlama başarısız (10 deneme): {e}')
+                self.get_logger().warn(f'UKF Global sıfırlama başarısız (5 deneme): {e}')
 
     # ── GPS kalite skoru hesaplama ────────────────────────────────────────────
     def _compute_quality(self, msg: NavSatFix) -> float:
@@ -204,12 +204,8 @@ class GPSMonitor(Node):
 
     # ── Mod geçiş mantığı ────────────────────────────────────────────────────
     def _evaluate_mode_switch(self, avg_quality: float):
-        import time
-        now_wall = time.time()
-        startup_elapsed = now_wall - self._startup_wall_time
-        
+        startup_elapsed = time.time() - self._startup_wall_time
         if startup_elapsed < self._startup_grace_secs:
-            self.get_logger().debug(f'Startup grace: {startup_elapsed:.1f}s / {self._startup_grace_secs}s')
             return
         
         now = self.get_clock().now()

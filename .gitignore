@@ -40,8 +40,6 @@ Thumbs.db
 # Accidental PostScript outputs
 *.ps
 *.eps
-rclpy
-sys
 
 # Thesis evidence outputs (large test artifacts)
 thesis_evidence/
