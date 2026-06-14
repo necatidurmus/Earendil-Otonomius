@@ -232,7 +232,7 @@ classdef mission_control_v2_GPS_FIX < matlab.apps.AppBase
         % GPS datum (ROSçunun /fromLL ile kalibre edildi, <2cm hata)
         GPS_LAT0 = 39.925018
         GPS_LON0 = 32.836956
-        GPS_YAW_DEG = 0.0
+        GPS_YAW_DEG = 36.81
         GPSMode = false
     end
     

@@ -48,16 +48,16 @@ robot:
   max_rotation:      1.0      # rad/s — max dönüş hızı
 
   # İvme limitleri (DiffDrive plugin)
-  max_linear_accel:  2.0      # m/s² — max doğrusal ivme (Leo Rover ~1-2 m/s²)
-  max_angular_accel: 5.0      # rad/s² — max açısal ivme
+  max_linear_accel:  25.0     # m/s² — max doğrusal ivme
+  max_angular_accel: 30.0     # rad/s² — max açısal ivme
 
   # Costmap
   radius_m:          0.49     # metre — robot yarıçapı
-  inflation_radius:  0.55     # metre — costmap inflation (dar geçit için küçük)
+  inflation_radius:  0.85     # metre — costmap inflation (çarpmayı önler)
 
   # Tekerlek sürtünme katsayıları (ODE)
-  wheel_mu:          1.0      # Tekerlek-zemin birincil sürtünme
-  wheel_mu2:         1.0      # Tekerlek-zemin ikincil sürtünme
+  wheel_mu:          3.0      # Tekerlek-zemin birincil sürtünme
+  wheel_mu2:         3.0      # Tekerlek-zemin ikincil sürtünme
   wheel_slip1:       0.001    # Boyuna kayma (0 = kayma yok)
   wheel_slip2:       0.0      # Enine kayma
 
@@ -113,7 +113,7 @@ door:
 # ── Test ayarları ───────────────────────────────────────────────────
 test:
   timeout:         600     # Tüm testin maksimum süresi (saniye)
-  world:      obstacles    # Asagidaki dünyalardan biri:
+  world:      obstacles    # Aşağıdaki世界lerden biri:
                     # 'obstacles'     — Tünel + engelli test dünyası (varsayılan)
                     # 'empty'         — Boş dünya
                     # 'open_terrain'  — Açık arazi (tepeler, vadiler)
