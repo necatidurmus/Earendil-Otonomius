@@ -1851,8 +1851,15 @@ classdef mission_control_v2_GPS_FIX < matlab.apps.AppBase
         
         function onPresetChanged(app, event)
             preset = event.NewValue.Text;
-            if ~strcmp(preset, 'Custom')
-                app.applyPreset(preset);
+            if contains(preset, 'Slow')
+                app.applyPreset('Slow');
+                app.applyParamsToROS();
+            elseif contains(preset, 'Normal')
+                app.applyPreset('Normal');
+                app.applyParamsToROS();
+            elseif contains(preset, 'Fast')
+                app.applyPreset('Fast');
+                app.applyParamsToROS();
             end
         end
         
