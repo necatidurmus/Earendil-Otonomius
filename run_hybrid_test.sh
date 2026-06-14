@@ -199,7 +199,7 @@ NAV2_READY=false
 for i in $(seq 1 10); do
   if docker exec "$CONTAINER" bash -c "
     source /opt/ros/humble/setup.bash
-    ros2 action list 2>/dev/null | grep -q navigate_to_pose
+    ros2 node list --no-daemon 2>/dev/null | grep -q bt_navigator
   " 2>/dev/null; then
     NAV2_READY=true
     break

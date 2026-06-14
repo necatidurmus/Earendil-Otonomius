@@ -53,7 +53,7 @@ robot:
 
   # Costmap
   radius_m:          0.49     # metre — robot yarıçapı
-  inflation_radius:  0.55     # metre — costmap inflation (dar geçit için küçük)
+  inflation_radius:  0.85     # metre — costmap inflation (çarpmayı önler)
 
   # Tekerlek sürtünme katsayıları (ODE)
   wheel_mu:          3.0      # Tekerlek-zemin birincil sürtünme
